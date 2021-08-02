@@ -1,0 +1,87 @@
+{
+  "emulators": {
+    "default": {
+      "port": 3569,
+      "serviceAccount": "emulator-account"
+    }
+  },
+  "deployments": {
+    "emulator": {
+      "owner": ["OnChainMultiSig"]
+    }
+  },
+  "contracts": {
+    "FungibleToken": {
+      "source": "./contracts/FungibleToken.cdc",
+      "aliases": {
+        "emulator": "0xee82856bf20e2aa6",
+        "testnet": "0x9a0766d93b6608b7",
+        "mainnet": "0xf233dcee88fe0abe"
+      }
+    },
+    "OnChainMultiSig": "./contracts/OnChainMultiSig.cdc"
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000",
+    "testnet": "access.devnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "keys" : "758abfd76ad82071cbeeb309f251eeefbe9bb8442557de745769a6ff0a912636"
+    },
+    "owner": {
+      "address": "01cf0e2f2f715450",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "vaulted-account" : {
+	  "address": "179b6b1cb6755e31",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "0" : {
+	  "address": "f3fcd2c1a78f5eee",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "1" : {
+	  "address": "e03daebed8ca0615",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "2" : {
+	  "address": "045a1763c93006ca",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "3" : {
+	  "address": "120e725050340cab",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "4" : {
+	  "address": "f669cb8d41ce0c74",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "5" : {
+	  "address": "192440c99cb17282",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "6" : {
+	  "address": "fd43f9148d4b725d",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "7" : {
+	  "address": "eb179c27144f783c",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "8" : {
+	  "address": "f7025fa05b578e3",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "9" : {
+	  "address": "e2f72218abeec2b9",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    },
+    "10" : {
+	  "address": "6909bc5ba14c266",
+      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+    }
+  }
+}

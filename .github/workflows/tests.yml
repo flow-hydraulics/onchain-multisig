@@ -1,0 +1,30 @@
+---
+name: Tests
+
+on:
+  pull_request:
+
+jobs:
+
+  emulator:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Test
+        env:
+          NETWORK: emulator
+          RPC_ADDRESS: localhost:3569
+          FUNGIBLE_TOKEN_ADDRESS: ee82856bf20e2aa6
+          TOKEN_ACCOUNT_ADDRESS: ${{ secrets.EMULATOR_ADDRESS }}
+          TOKEN_ACCOUNT_KEYS: ${{ secrets.EMULATOR_KEYS }}
+          TOKEN_ACCOUNT_PK: ${{secrets.EMULATOR_PK }}
+        run: make test
