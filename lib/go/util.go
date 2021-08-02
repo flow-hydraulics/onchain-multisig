@@ -17,11 +17,9 @@ import (
 )
 
 type Addresses struct {
-	FungibleToken      string
-	ExampleToken       string
-	FiatTokenInterface string
-	FiatToken          string
-	OnChainMultiSig    string
+	FungibleToken     string
+	MultiSigFlowToken string
+	OnChainMultiSig   string
 }
 
 type TestEvent struct {
@@ -43,8 +41,7 @@ func ParseCadenceTemplate(templatePath string) []byte {
 	}
 
 	// Addresss for emulator are
-	addresses = Addresses{"ee82856bf20e2aa6", "01cf0e2f2f715450", "01cf0e2f2f715450", "01cf0e2f2f715450", "01cf0e2f2f715450"}
-	// addresses = Addresses{os.Getenv("FUNGIBLE_TOKEN_ADDRESS"), os.Getenv("TOKEN_ACCOUNT_ADDRESS"), os.Getenv("TOKEN_ACCOUNT_ADDRESS"), os.Getenv("TOKEN_ACCOUNT_ADDRESS"), os.Getenv("TOKEN_ACCOUNT_ADDRESS")}
+	addresses = Addresses{"ee82856bf20e2aa6", "01cf0e2f2f715450", "01cf0e2f2f715450"}
 	buf := &bytes.Buffer{}
 	err = tmpl.Execute(buf, addresses)
 	if err != nil {
@@ -63,7 +60,7 @@ func ParseTestEvents(events []flow.Event) (formatedEvents []*gwtf.FormatedEvent)
 
 func NewExpectedEvent(name string) TestEvent {
 	return TestEvent{
-		Name:   "A." + addresses.FiatToken + ".FiatToken." + name,
+		Name:   "A." + addresses.MultiSigFlowToken + ".MultiSigFlowToken." + name,
 		Fields: map[string]string{},
 	}
 }

@@ -39,23 +39,23 @@
 	  "address": "179b6b1cb6755e31",
       "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
     },
-    "0" : {
+    "w-1000" : {
 	  "address": "f3fcd2c1a78f5eee",
-      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+      "keys" : "c7b5941fa9dc429f752057ef1f5b4d393470256f20ad0853d4343dde84a70946"
     },
-    "1" : {
+    "w-500-1" : {
 	  "address": "e03daebed8ca0615",
-      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+      "keys" : "3548f83a45e04050033112b81722f29c6d853fd00eb79a08101025900ca4c543"
     },
-    "2" : {
+    "w-500-2" : {
 	  "address": "045a1763c93006ca",
-      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+      "keys" : "8da7a03dbcdd9d84d4e5e9875744accf7810d41fc60dd2522e5fa3f1441eff1d"
     },
-    "3" : {
+    "w-250-1" : {
 	  "address": "120e725050340cab",
-      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+      "keys" : "2e20dc54149cd114e265ef09b6dd09e222ce1979257b359fb6db53b64f260c6e"
     },
-    "4" : {
+    "w-250-2" : {
 	  "address": "f669cb8d41ce0c74",
       "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
     },

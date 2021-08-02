@@ -1,4 +1,5 @@
-import FungibleToken from 0xee82856bf20e2aa6
+import FungibleToken from 0x{{.FungibleToken}}
+import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 
 pub contract MultiSigFlowToken: FungibleToken {
 
@@ -14,62 +15,45 @@ pub contract MultiSigFlowToken: FungibleToken {
     // Event that is emitted when tokens are deposited to a Vault
     pub event TokensDeposited(amount: UFix64, to: Address?)
 
-    // Event that is emitted when new tokens are minted
-    pub event TokensMinted(amount: UFix64)
-
-    // Event that is emitted when tokens are destroyed
-    pub event TokensBurned(amount: UFix64)
-
-    // Event that s emitted when a new minter resource is created
-    pub event MinterCreated(allowedAmount: UFix64)
-
-    // Event that is emitted when a new burner resource is created
-    pub event BurnerCreated()
+    // Vault paths
+    pub let VaultStoragePath: StoragePath;
+    pub let VaultBalancePubPath: PublicPath;
+    pub let VaultReceiverPubPath: PublicPath;
+    pub let VaultPubSigner: PublicPath;
 
     // Vault
     //
-    // Each user stores an instance of only the Vault in their storage
-    // The functions in the Vault and governed by the pre and post conditions
-    // in FungibleToken when they are called.
-    // The checks happen at runtime whenever a function is called.
-    //
-    // Resources can only be created in the context of the contract that they
-    // are defined in, so there is no way for a malicious user to create Vaults
-    // out of thin air. A special Minter resource needs to be defined to mint
-    // new tokens.
-    //
-    pub resource Vault: FungibleToken.Provider, FungibleToken.Receiver, FungibleToken.Balance {
+    pub resource Vault: FungibleToken.Provider, FungibleToken.Receiver, FungibleToken.Balance, OnChainMultiSig.PublicSigner {
 
         // holds the balance of a users tokens
         pub var balance: UFix64
 
         // initialize the balance at resource creation time
         init(balance: UFix64) {
-            self.balance = balance
+            self.balance = balance;
+            self.signatureStore = nil;
+        }
+        
+        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
+            // Create keylistElements in the case this is for multisig for the owner account
+            // Default signing algo ECDSA_P256 = 1
+            let signers: [OnChainMultiSig.KeyListElement] = [];
+            let len = multiSigPubKeys.length;
+            var i = 0;
+            while i < len {
+                let ke = OnChainMultiSig.KeyListElement(pk: multiSigPubKeys[i], sa: 1, w: multiSigKeyWeights[i])
+                signers.append(ke);
+                i = i + 1;
+            }
+            self.signatureStore = OnChainMultiSig.SignatureStore(initialSigners: signers)
         }
 
-        // withdraw
-        //
-        // Function that takes an integer amount as an argument
-        // and withdraws that amount from the Vault.
-        // It creates a new temporary Vault that is used to hold
-        // the money that is being transferred. It returns the newly
-        // created Vault to the context that called so it can be deposited
-        // elsewhere.
-        //
         pub fun withdraw(amount: UFix64): @FungibleToken.Vault {
             self.balance = self.balance - amount
             emit TokensWithdrawn(amount: amount, from: self.owner?.address)
             return <-create Vault(balance: amount)
         }
 
-        // deposit
-        //
-        // Function that takes a Vault object as an argument and adds
-        // its balance to the balance of the owners Vault.
-        // It is allowed to destroy the sent Vault because the Vault
-        // was a temporary holder of the tokens. The Vault's balance has
-        // been consumed and therefore can be destroyed.
         pub fun deposit(from: @FungibleToken.Vault) {
             let vault <- from as! @MultiSigFlowToken.Vault
             self.balance = self.balance + vault.balance
@@ -78,115 +62,83 @@ pub contract MultiSigFlowToken: FungibleToken {
             destroy vault
         }
 
+        // PublicSigner interface requirements 
+        // 1. signatureStore: Stores the payloads, transactions pending to be signed and signature
+        // 2. addNewPayload: add new transaction payload to the signature store waiting for others to sign
+        // 3. addPayloadSignature: add signature to store for existing paylaods by payload index
+        // 4. executeTx: attempt to execute the transaction at a given index after required signatures have been added
+        // 
+        // Interfaces 1-3 uses `OnChainMultiSig.Manager` struct for code implementation
+        // Interface 4 needs to be implemented specifically for each resource
+
+        /// struct to keep track of partial sigatures
+        access(self) var signatureStore: OnChainMultiSig.SignatureStore?;
+        
+        /// To submit a new paylaod, i.e. starting a new tx requiring more signatures
+        pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, keyListIndex: Int, sig: [UInt8]) {
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore!);
+            let newSignatureStore = manager.addNewPayload(resourceId: self.uuid, payload: payload, keyListIndex: keyListIndex, sig: sig);
+            self.signatureStore = newSignatureStore
+        }
+
+        /// To submit a new signature for a pre-exising payload, i.e. adding another signature
+        pub fun addPayloadSignature (txIndex: UInt64, keyListIndex: Int, sig: [UInt8]) {
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore!);
+            let newSignatureStore = manager.addPayloadSignature(resourceId: self.uuid, txIndex: txIndex, keyListIndex: keyListIndex, sig: sig);
+            self.signatureStore = newSignatureStore
+       }
+        /// To execute the multisig transaction iff conditions are met
+        pub fun executeTx(txIndex: UInt64): @AnyResource? {
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore!);
+            let p = manager.readyForExecution(txIndex: txIndex) ?? panic ("TX not ready for execution")
+            switch p.method {
+                case "withdraw":
+                    let m = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
+                    return <- self.withdraw(amount: m);
+            }
+            return nil;
+        }
+
         destroy() {
             MultiSigFlowToken.totalSupply = MultiSigFlowToken.totalSupply - self.balance
         }
     }
 
-    // createEmptyVault
-    //
-    // Function that creates a new Vault with a balance of zero
-    // and returns it to the calling context. A user must call this function
-    // and store the returned Vault in their storage in order to allow their
-    // account to be able to receive deposits of this token type.
-    //
-    pub fun createEmptyVault(): @FungibleToken.Vault {
+    pub fun createEmptyVault(): @Vault {
         return <-create Vault(balance: 0.0)
     }
 
     pub resource Administrator {
-        // createNewMinter
-        //
-        // Function that creates and returns a new minter resource
-        //
-        pub fun createNewMinter(allowedAmount: UFix64): @Minter {
-            emit MinterCreated(allowedAmount: allowedAmount)
-            return <-create Minter(allowedAmount: allowedAmount)
-        }
-
-        // createNewBurner
-        //
-        // Function that creates and returns a new burner resource
-        //
-        pub fun createNewBurner(): @Burner {
-            emit BurnerCreated()
-            return <-create Burner()
-        }
     }
 
-    // Minter
-    //
-    // Resource object that token admin accounts can hold to mint new tokens.
-    //
-    pub resource Minter {
-
-        // the amount of tokens that the minter is allowed to mint
-        pub var allowedAmount: UFix64
-
-        // mintTokens
-        //
-        // Function that mints new tokens, adds them to the total supply,
-        // and returns them to the calling context.
-        //
-        pub fun mintTokens(amount: UFix64): @MultiSigFlowToken.Vault {
-            pre {
-                amount > UFix64(0): "Amount minted must be greater than zero"
-                amount <= self.allowedAmount: "Amount minted must be less than the allowed amount"
-            }
-            MultiSigFlowToken.totalSupply = MultiSigFlowToken.totalSupply + amount
-            self.allowedAmount = self.allowedAmount - amount
-            emit TokensMinted(amount: amount)
-            return <-create Vault(balance: amount)
-        }
-
-        init(allowedAmount: UFix64) {
-            self.allowedAmount = allowedAmount
-        }
-    }
-
-    // Burner
-    //
-    // Resource object that token admin accounts can hold to burn tokens.
-    //
-    pub resource Burner {
-
-        // burnTokens
-        //
-        // Function that destroys a Vault instance, effectively burning the tokens.
-        //
-        // Note: the burned tokens are automatically subtracted from the
-        // total supply in the Vault destructor.
-        //
-        pub fun burnTokens(from: @FungibleToken.Vault) {
-            let vault <- from as! @MultiSigFlowToken.Vault
-            let amount = vault.balance
-            destroy vault
-            emit TokensBurned(amount: amount)
-        }
-    }
 
     init(adminAccount: AuthAccount) {
         self.totalSupply = 100000.0
 
+        self.VaultStoragePath = /storage/vault
+        self.VaultBalancePubPath = /public/vaultBalance
+        self.VaultReceiverPubPath = /public/vaultReceive
+        self.VaultPubSigner = /public/vaultMultiSigner
+
         // Create the Vault with the total supply of tokens and save it in storage
         //
         let vault <- create Vault(balance: self.totalSupply)
-        adminAccount.save(<-vault, to: /storage/multiSigFlowTokenVaul)
+        adminAccount.save(<-vault, to: self.VaultStoragePath)
 
         // Create a public capability to the stored Vault that only exposes
         // the `deposit` method through the `Receiver` interface
         //
         adminAccount.link<&MultiSigFlowToken.Vault{FungibleToken.Receiver}>(
-            /public/flowTokenReceiver,
-            target: /storage/multiSigFlowTokenVaul
+            self.VaultReceiverPubPath,
+            target: self.VaultStoragePath 
         )
 
         // Create a public capability to the stored Vault that only exposes
         // the `balance` field through the `Balance` interface
         //
         adminAccount.link<&MultiSigFlowToken.Vault{FungibleToken.Balance}>(
-            /public/flowTokenBalance,
-            target: /storage/multiSigFlowTokenVaul
+            self.VaultBalancePubPath,
+            target: self.VaultStoragePath 
         )
 
         let admin <- create Administrator()
