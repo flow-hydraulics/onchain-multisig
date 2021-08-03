@@ -2,8 +2,11 @@ package util
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"math/big"
 	"testing"
 	"time"
 
@@ -116,14 +119,14 @@ func GetBalance(g *gwtf.GoWithTheFlow, account string) (result cadence.UFix64, e
 	return
 }
 
-func GetKeyListIndex(g *gwtf.GoWithTheFlow, account string) (result uint64, err error) {
+func GetKeyListIndex(g *gwtf.GoWithTheFlow, account string) (result *big.Int, err error) {
 	filename := "../../../scripts/get_store_key_list_index.cdc"
 	script := ParseCadenceTemplate(filename)
 	value, err := g.ScriptFromFile(filename, script).AccountArgument(account).RunReturns()
 	if err != nil {
 		return
 	}
-	result = value.ToGoValue().(uint64)
+	result = value.ToGoValue().(*big.Int)
 	return
 }
 
@@ -167,10 +170,20 @@ func ConvertCadenceByteArray(a cadence.Value) (b []uint8) {
 // Multisig utility functions
 
 // Signing payload offline
-func SignPayloadOffline(g *gwtf.GoWithTheFlow, message []byte, signingAcct string) (sig []byte, err error) {
+func SignPayloadOffline(g *gwtf.GoWithTheFlow, message []byte, signingAcct string) (sig string, err error) {
 	s := g.Accounts[signingAcct]
+	fmt.Println("s Private: ", s.PrivateKey)
+	fmt.Println("s Public : ", s.PrivateKey.PublicKey())
+	fmt.Println("s Pub alg: ", s.PrivateKey.PublicKey().Algorithm().String())
+	fmt.Println("s hahalgo: ", s.HashAlgo)
 	signer := crypto.NewInMemorySigner(s.PrivateKey, s.HashAlgo)
-	sig, err = signer.Sign(message)
+	sigbytes, err := signer.Sign(message)
+	if err != nil {
+		return
+	}
+	fmt.Println("sig in bytes: ", sigbytes)
+
+	sig = hex.EncodeToString(sigbytes)
 	return
 }
 
@@ -208,6 +221,8 @@ func GetSignableDataFromScript(
 			panic("arg type not supported")
 		}
 		signable = append(signable, ConvertCadenceByteArray(b)...)
+
+		fmt.Println("signable: ", signable)
 
 	}
 	return

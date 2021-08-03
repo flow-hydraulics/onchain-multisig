@@ -59,13 +59,13 @@ pub contract OnChainMultiSig {
     
     pub struct SignatureStore {
         // Keylist index
-        pub(set) var keyListIndex: UInt64;
+        pub(set) var keyListIndex: Int;
         
         // Transaction index
         pub(set) var txIndex: UInt64;
 
         // Signers and their weights
-        pub let keyList: {UInt64: KeyListElement};
+        pub let keyList: {Int: KeyListElement};
 
         // map of an assigned index and the payload
         // payload in this case is the script and argument
@@ -82,7 +82,7 @@ pub contract OnChainMultiSig {
             
            for e in initialSigners {
                self.keyList.insert(key: self.keyListIndex, e);
-               self.keyListIndex = self.keyListIndex + 1 as UInt64;
+               self.keyListIndex = self.keyListIndex + 1 as Int;
            }
         }
     }
@@ -92,7 +92,7 @@ pub contract OnChainMultiSig {
         pub var signatureStore: SignatureStore;
 
         pub fun getSignableData(payload: PayloadDetails): [UInt8] {
-            let s = payload.method.utf8;
+            var s = payload.method.utf8;
             for a in payload.args {
                 var b: [UInt8] = [];
                 switch a.type {
@@ -111,7 +111,7 @@ pub contract OnChainMultiSig {
                     default:
                         panic ("Payload arg type not supported")
                 }
-                s.concat(b);
+                s = s.concat(b);
             }
             return s; 
         }
@@ -119,21 +119,24 @@ pub contract OnChainMultiSig {
         // Currently not supporting MultiSig
         pub fun addKey (newKeyListElement: KeyListElement): SignatureStore {
             self.signatureStore.keyList.insert(key: self.signatureStore.keyListIndex, newKeyListElement);
-            self.signatureStore.keyListIndex = self.signatureStore.keyListIndex + 1 as UInt64;
+            self.signatureStore.keyListIndex = self.signatureStore.keyListIndex + 1 as Int;
             return self.signatureStore
         }
 
         // Currently not supporting MultiSig
-        pub fun removeKey (keyIndex: UInt64, keyListElement: KeyListElement): SignatureStore {
+        pub fun removeKey (keyListIndex: Int, keyListElement: KeyListElement): SignatureStore {
             pre {
-                self.signatureStore.keyList.containsKey(keyIndex): "keylist does not contain such key index"
+                self.signatureStore.keyList.containsKey(keyListIndex): "keylist does not contain such key index"
             }
-            self.signatureStore.keyList.remove(key: keyIndex);
+            self.signatureStore.keyList.remove(key: keyListIndex);
             return self.signatureStore
         }
         
         pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, keyListIndex: Int, sig: [UInt8]): SignatureStore {
             // 1. check if the payloadSig is signed by one of the account's keys, preventing others from adding to storage
+            if (self.verifyIsOneOfSigners(payload: payload, txIndex: nil, keyListIndex: keyListIndex, sig: sig) == false) {
+                panic ("invalid signer")
+            }
 
             // 2. increment index
             let txIndex = self.signatureStore.txIndex.saturatingAdd(1);
@@ -167,6 +170,60 @@ pub contract OnChainMultiSig {
             // 2. if not enough weight etc, return nil
             let pd = self.signatureStore.payloads.remove(key: txIndex)!;
             return pd;
+        }
+        
+        pub fun verifyIsOneOfSigners (payload: PayloadDetails?, txIndex: UInt64?, keyListIndex: Int, sig: [UInt8]): Bool {
+            assert(payload != nil || txIndex != nil, message: "cannot verify signature without payload or txIndex");
+            assert(!(payload != nil && txIndex != nil), message: "cannot verify signature without payload or txIndex");
+            assert(self.signatureStore.keyList.containsKey(keyListIndex), message: "no signer stored for multisig")
+            
+            log(self.signatureStore.keyList[keyListIndex])
+            let pk = PublicKey(
+                publicKey: self.signatureStore.keyList[keyListIndex]!.publicKey.decodeHex(),
+                signatureAlgorithm: SignatureAlgorithm.ECDSA_P256
+                //signatureAlgorithm: SignatureAlgorithm(rawValue: self.signatureStore.keyList[keyListIndex]!.sigAlgo) ?? panic ("invalid signature algo")
+            )
+            log("publicKey")
+            log(pk)
+
+            log("sig")
+            log(sig)
+
+            var payloadInBytes: [UInt8] = []
+
+            if (payload != nil) {
+                payloadInBytes = self.getSignableData(payload: payload!);
+            } else {
+                let p = self.signatureStore.payloads[txIndex!];
+                payloadInBytes = self.getSignableData(payload: p!);
+            }
+            
+            log("signable")
+            log(payloadInBytes)
+            
+            let keylist = Crypto.KeyList()
+            keylist.add(pk, hashAlgorithm: HashAlgorithm.SHA3_256, weight: 1.0)
+
+            let signatureSet = [
+                Crypto.KeyListSignature(
+                    keyIndex: 0,
+                    signature: sig
+                )
+            ]
+            
+            let isValid = keylist.verify(
+                signatureSet: signatureSet,
+                signedData: payloadInBytes 
+            )
+
+            return isValid
+            // return pk.verify(
+            //     signature: sig,
+            //     signedData: payloadInBytes,
+            //     domainSeparationTag: "FLOW-V0.0-user",
+            //     hashAlgorithm: HashAlgorithm.SHA3_256
+            // )
+            
         }
         
         

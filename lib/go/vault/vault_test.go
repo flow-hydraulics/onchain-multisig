@@ -22,7 +22,7 @@ func TestAddVaultToAccount(t *testing.T) {
 
 	keyListIndex, err := util.GetKeyListIndex(g, "vaulted-account")
 	assert.NoError(t, err)
-	assert.Equal(t, keyListIndex, uint64(5))
+	assert.Equal(t, keyListIndex.Int64(), int64(5))
 
 	txIndex, err := util.GetTxIndex(g, "vaulted-account")
 	assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestAddNewPendingTransferPayload(t *testing.T) {
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
-	assert.Equal(t, postTxIndex-initTxIndex, uint64(1))
+	assert.Equal(t, postTxIndex-initTxIndex, int(1))
 
 	uuid, err := util.GetVaultUUID(g, vaultAcct)
 	assert.NoError(t, err)

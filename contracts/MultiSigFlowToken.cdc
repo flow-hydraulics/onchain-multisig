@@ -78,11 +78,6 @@ pub contract MultiSigFlowToken: FungibleToken {
         pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, keyListIndex: Int, sig: [UInt8]) {
             let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
             let newSignatureStore = manager.addNewPayload(resourceId: self.uuid, payload: payload, keyListIndex: keyListIndex, sig: sig);
-            log("====================")
-            log(self.signatureStore)
-            log("====================")
-            log(newSignatureStore)
-            log("====================")
             self.signatureStore = newSignatureStore
         }
 

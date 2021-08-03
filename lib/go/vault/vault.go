@@ -1,6 +1,8 @@
 package vault
 
 import (
+	"fmt"
+
 	"github.com/bjartek/go-with-the-flow/gwtf"
 	util "github.com/flow-hydraulics/onchain-multisig"
 	"github.com/onflow/cadence"
@@ -22,12 +24,16 @@ func AddVaultToAccount(
 	w500, _ := cadence.NewUFix64("500.0")
 	w250, _ := cadence.NewUFix64("250.0")
 
+	fmt.Println("pk1000: ")
+	fmt.Println(pk1000)
+	fmt.Println(g.Accounts["w-1000"].PrivateKey.PublicKey().Encode())
+
 	multiSigPubKeys := []cadence.Value{
-		cadence.String(pk1000),  // keyListIndex = 0
-		cadence.String(pk500_1), // keyListIndex = 1
-		cadence.String(pk500_2),
-		cadence.String(pk250_1),
-		cadence.String(pk250_2),
+		cadence.String(pk1000[2:]),  // keyListIndex = 0
+		cadence.String(pk500_1[2:]), // keyListIndex = 1
+		cadence.String(pk500_2[2:]),
+		cadence.String(pk250_1[2:]),
+		cadence.String(pk250_2[2:]),
 	}
 	multiSigKeyWeights := []cadence.Value{w1000, w500, w500, w250, w250}
 
@@ -80,16 +86,14 @@ func MultiSig_NewPendingTransferPayload(
 		return
 	}
 
-	var sigArray []cadence.Value
-	for e := range sig {
-		sigArray = append(sigArray, cadence.UInt8(e))
-	}
+	fmt.Println("Sig: ", sig)
 
 	// TODO add to in the signature
+	//Argument(cadence.NewArray(sigArray)).
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
 		IntArgument(keyListIndex).
-		Argument(cadence.NewArray(sigArray)).
+		StringArgument(sig).
 		AccountArgument(vaultAcct).
 		StringArgument(method).
 		UFix64Argument(amount).
