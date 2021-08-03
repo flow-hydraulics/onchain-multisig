@@ -58,9 +58,9 @@ func ParseTestEvents(events []flow.Event) (formatedEvents []*gwtf.FormatedEvent)
 	return
 }
 
-func NewExpectedEvent(name string) TestEvent {
+func NewExpectedEvent(contract string, name string) TestEvent {
 	return TestEvent{
-		Name:   "A." + addresses.MultiSigFlowToken + ".MultiSigFlowToken." + name,
+		Name:   "A." + addresses.MultiSigFlowToken + "." + contract + "." + name,
 		Fields: map[string]string{},
 	}
 }
@@ -116,6 +116,28 @@ func GetBalance(g *gwtf.GoWithTheFlow, account string) (result cadence.UFix64, e
 	return
 }
 
+func GetKeyListIndex(g *gwtf.GoWithTheFlow, account string) (result uint64, err error) {
+	filename := "../../../scripts/get_store_key_list_index.cdc"
+	script := ParseCadenceTemplate(filename)
+	value, err := g.ScriptFromFile(filename, script).AccountArgument(account).RunReturns()
+	if err != nil {
+		return
+	}
+	result = value.ToGoValue().(uint64)
+	return
+}
+
+func GetTxIndex(g *gwtf.GoWithTheFlow, account string) (result uint64, err error) {
+	filename := "../../../scripts/get_store_tx_index.cdc"
+	script := ParseCadenceTemplate(filename)
+	value, err := g.ScriptFromFile(filename, script).AccountArgument(account).RunReturns()
+	if err != nil {
+		return
+	}
+	result = value.ToGoValue().(uint64)
+	return
+}
+
 func GetVaultUUID(g *gwtf.GoWithTheFlow, account string) (r uint64, err error) {
 	filename := "../../../scripts/get_vault_uuid.cdc"
 	script := ParseCadenceTemplate(filename)
@@ -157,7 +179,7 @@ func GetSignableDataFromScript(
 	method string,
 	args ...interface{},
 ) (signable []byte, err error) {
-	filename := "../../../scripts/multisig/calc_signable_data.cdc"
+	filename := "../../../scripts/calc_signable_data.cdc"
 	script := ParseCadenceTemplate(filename)
 
 	cMethod, err := g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.String(method))).RunReturns()

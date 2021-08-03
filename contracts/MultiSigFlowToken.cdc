@@ -31,7 +31,7 @@ pub contract MultiSigFlowToken: FungibleToken {
         // initialize the balance at resource creation time
         init(balance: UFix64) {
             self.balance = balance;
-            self.signatureStore = nil;
+            self.signatureStore = OnChainMultiSig.SignatureStore(initialSigner: []);
         }
         
         pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
@@ -67,29 +67,34 @@ pub contract MultiSigFlowToken: FungibleToken {
         // 2. addNewPayload: add new transaction payload to the signature store waiting for others to sign
         // 3. addPayloadSignature: add signature to store for existing paylaods by payload index
         // 4. executeTx: attempt to execute the transaction at a given index after required signatures have been added
-        // 
+        // 5. UUID: gets the uuid of this resource 
         // Interfaces 1-3 uses `OnChainMultiSig.Manager` struct for code implementation
         // Interface 4 needs to be implemented specifically for each resource
 
         /// struct to keep track of partial sigatures
-        access(self) var signatureStore: OnChainMultiSig.SignatureStore?;
+        pub var signatureStore: OnChainMultiSig.SignatureStore;
         
         /// To submit a new paylaod, i.e. starting a new tx requiring more signatures
         pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, keyListIndex: Int, sig: [UInt8]) {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore!);
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
             let newSignatureStore = manager.addNewPayload(resourceId: self.uuid, payload: payload, keyListIndex: keyListIndex, sig: sig);
+            log("====================")
+            log(self.signatureStore)
+            log("====================")
+            log(newSignatureStore)
+            log("====================")
             self.signatureStore = newSignatureStore
         }
 
         /// To submit a new signature for a pre-exising payload, i.e. adding another signature
         pub fun addPayloadSignature (txIndex: UInt64, keyListIndex: Int, sig: [UInt8]) {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore!);
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
             let newSignatureStore = manager.addPayloadSignature(resourceId: self.uuid, txIndex: txIndex, keyListIndex: keyListIndex, sig: sig);
             self.signatureStore = newSignatureStore
        }
         /// To execute the multisig transaction iff conditions are met
         pub fun executeTx(txIndex: UInt64): @AnyResource? {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore!);
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
             let p = manager.readyForExecution(txIndex: txIndex) ?? panic ("TX not ready for execution")
             switch p.method {
                 case "withdraw":
@@ -98,6 +103,10 @@ pub contract MultiSigFlowToken: FungibleToken {
             }
             return nil;
         }
+
+        pub fun UUID(): UInt64 {
+            return self.uuid;
+        }; 
 
         destroy() {
             MultiSigFlowToken.totalSupply = MultiSigFlowToken.totalSupply - self.balance

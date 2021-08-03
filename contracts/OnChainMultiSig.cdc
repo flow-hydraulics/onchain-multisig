@@ -43,6 +43,8 @@ pub contract OnChainMultiSig {
     pub resource interface PublicSigner {
         // the first [UInt8] in the signable data will be the method
         // follow by the args if args are not resources
+        pub fun UUID(): UInt64; 
+        pub var signatureStore: SignatureStore;
         pub fun addNewPayload(payload: PayloadDetails, keyListIndex: Int, sig: [UInt8]);
         pub fun addPayloadSignature (txIndex: UInt64, keyListIndex: Int, sig: [UInt8]);
         pub fun executeTx(txIndex: UInt64): @AnyResource?;
@@ -88,7 +90,6 @@ pub contract OnChainMultiSig {
     pub struct Manager: SignatureManager {
         
         pub var signatureStore: SignatureStore;
-    
 
         pub fun getSignableData(payload: PayloadDetails): [UInt8] {
             let s = payload.method.utf8;

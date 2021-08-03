@@ -49,4 +49,5 @@ transaction(multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
         let s = signer.borrow<&MultiSigFlowToken.Vault>(from: MultiSigFlowToken.VaultStoragePath) ?? panic ("cannot borrow own resource")
         s.addKeys(multiSigPubKeys: multiSigPubKeys, multiSigKeyWeights: multiSigKeyWeights)
     }
+
 }

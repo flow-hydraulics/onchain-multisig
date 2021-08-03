@@ -39,3 +39,79 @@ func AddVaultToAccount(
 	events = util.ParseTestEvents(e)
 	return
 }
+
+func AccountSignerTransferTokens(
+	g *gwtf.GoWithTheFlow,
+	amount string,
+	fromAcct string,
+	toAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/account_signer_token_transfer.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(fromAcct).
+		UFix64Argument(amount).
+		AccountArgument(toAcct).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
+
+func MultiSig_NewPendingTransferPayload(
+	g *gwtf.GoWithTheFlow,
+	amount string,
+	keyListIndex int,
+	signerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/new_pending_transfer.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	method := "transfer"
+
+	signable, err := util.GetSignableDataFromScript(g, method, amount)
+	if err != nil {
+		return
+	}
+
+	sig, err := util.SignPayloadOffline(g, signable, signerAcct)
+	if err != nil {
+		return
+	}
+
+	var sigArray []cadence.Value
+	for e := range sig {
+		sigArray = append(sigArray, cadence.UInt8(e))
+	}
+
+	// TODO add to in the signature
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(signerAcct).
+		IntArgument(keyListIndex).
+		Argument(cadence.NewArray(sigArray)).
+		AccountArgument(vaultAcct).
+		StringArgument(method).
+		UFix64Argument(amount).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
+
+//func MultiSig_MasterMinterExecuteTx(
+//	g *gwtf.GoWithTheFlow,
+//	index uint64,
+//	ownerAcct string,
+//) (events []*gwtf.FormatedEvent, err error) {
+//	txFilename := "../../../transactions/owner/multisig/executeTx.cdc"
+//	txScript := util.ParseCadenceTemplate(txFilename)
+//
+//	e, err := g.TransactionFromFile(txFilename, txScript).
+//		SignProposeAndPayAs(ownerAcct).
+//		AccountArgument("owner").
+//		UInt64Argument(index).
+//		Run()
+//	events = util.ParseTestEvents(e)
+//	return
+//
+//}

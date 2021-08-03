@@ -59,9 +59,9 @@
 	  "address": "f669cb8d41ce0c74",
       "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
     },
-    "5" : {
+    "non-registered-account" : {
 	  "address": "192440c99cb17282",
-      "keys" : "9c687961e7a1abe1e445830e7ec118ffd1e2a0449cf705f5476b3f100e94dc29"
+      "keys" : "bf242a7c12e299d90e4621d99501d1e27ccdc4d511cdf1f0fbba37a47e83bd24"
     },
     "6" : {
 	  "address": "fd43f9148d4b725d",

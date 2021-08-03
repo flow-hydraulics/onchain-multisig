@@ -18,10 +18,12 @@ func main() {
 	encodedStr := hex.EncodeToString(contractCode)
 	g.CreateAccountPrintEvents(
 		"vaulted-account",
+		"w-1000",
 		"w-500-1",
 		"w-500-2",
 		"w-250-1",
 		"w-250-2",
+		"non-registered-account",
 	)
 	e, err := g.TransactionFromFile(txFilename, code).
 		SignProposeAndPayAs("owner").
