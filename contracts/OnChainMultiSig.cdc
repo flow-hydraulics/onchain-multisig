@@ -157,7 +157,7 @@ pub contract OnChainMultiSig {
             assert(self.signatureStore.payloads.containsKey(txIndex), message: "Payload has not been added");
 
             // check if the the signer is the accounting owning this signer by using data as the one in payloads
-            if (self.verifyIsOneOfSigners(payload: payload, txIndex: nil, keyListIndex: keyListIndex, sig: sig) == false) {
+            if (self.verifyIsOneOfSigners(payload: nil, txIndex: txIndex, keyListIndex: keyListIndex, sig: sig) == false) {
                 panic ("invalid signer")
             }
 
