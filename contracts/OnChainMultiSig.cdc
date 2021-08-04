@@ -133,19 +133,16 @@ pub contract OnChainMultiSig {
         }
         
         pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, keyListIndex: Int, sig: [UInt8]): SignatureStore {
-            // 1. check if the payloadSig is signed by one of the account's keys, preventing others from adding to storage
+            // check if the payloadSig is signed by one of the account's keys, preventing others from adding to storage
             if (self.verifyIsOneOfSigners(payload: payload, txIndex: nil, keyListIndex: keyListIndex, sig: sig) == false) {
                 panic ("invalid signer")
             }
 
-            // 2. increment index
             let txIndex = self.signatureStore.txIndex.saturatingAdd(1);
             self.signatureStore.txIndex = txIndex;
-
-            // 3. call addPayloadSig to store the first sig for the index
             assert(!self.signatureStore.payloads.containsKey(txIndex), message: "Payload index already exist");
+
             self.signatureStore.payloads.insert(key: txIndex, payload);
-            
             let sigs = [Crypto.KeyListSignature( keyIndex: keyListIndex, signature: sig)]
             self.signatureStore.payloadSigs.insert(
                 key: txIndex, 
@@ -157,9 +154,16 @@ pub contract OnChainMultiSig {
         }
 
         pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, keyListIndex: Int, sig: [UInt8]): SignatureStore {
-            // 1. check if the the signer is the accounting owning this signer by using data as the one in payloads
-            // 2. add to the sig
-            // 3. if weight of all the signatures above threshold, call executeTransaction
+            assert(self.signatureStore.payloads.containsKey(txIndex), message: "Payload has not been added");
+
+            // check if the the signer is the accounting owning this signer by using data as the one in payloads
+            if (self.verifyIsOneOfSigners(payload: payload, txIndex: nil, keyListIndex: keyListIndex, sig: sig) == false) {
+                panic ("invalid signer")
+            }
+
+            self.signatureStore.payloadSigs[txIndex]!.append(Crypto.KeyListSignature(keyIndex: keyListIndex, signature: sig));
+
+            // if weight of all the signatures above threshold, call executeTransaction
             emit NewPayloadSigAdded(resourceId: resourceId, txIndex: txIndex)
             return self.signatureStore
         }
@@ -180,14 +184,8 @@ pub contract OnChainMultiSig {
             log(self.signatureStore.keyList[keyListIndex])
             let pk = PublicKey(
                 publicKey: self.signatureStore.keyList[keyListIndex]!.publicKey.decodeHex(),
-                signatureAlgorithm: SignatureAlgorithm.ECDSA_P256
-                //signatureAlgorithm: SignatureAlgorithm(rawValue: self.signatureStore.keyList[keyListIndex]!.sigAlgo) ?? panic ("invalid signature algo")
+                signatureAlgorithm: SignatureAlgorithm(rawValue: self.signatureStore.keyList[keyListIndex]!.sigAlgo) ?? panic ("invalid signature algo")
             )
-            log("publicKey")
-            log(pk)
-
-            log("sig")
-            log(sig)
 
             var payloadInBytes: [UInt8] = []
 
@@ -198,31 +196,12 @@ pub contract OnChainMultiSig {
                 payloadInBytes = self.getSignableData(payload: p!);
             }
             
-            log("signable")
-            log(payloadInBytes)
-            
-            let keylist = Crypto.KeyList()
-            keylist.add(pk, hashAlgorithm: HashAlgorithm.SHA3_256, weight: 1.0)
-
-            let signatureSet = [
-                Crypto.KeyListSignature(
-                    keyIndex: 0,
-                    signature: sig
-                )
-            ]
-            
-            let isValid = keylist.verify(
-                signatureSet: signatureSet,
-                signedData: payloadInBytes 
+            return pk.verify(
+                signature: sig,
+                signedData: payloadInBytes,
+                domainSeparationTag: "FLOW-V0.0-user",
+                hashAlgorithm: HashAlgorithm.SHA3_256
             )
-
-            return isValid
-            // return pk.verify(
-            //     signature: sig,
-            //     signedData: payloadInBytes,
-            //     domainSeparationTag: "FLOW-V0.0-user",
-            //     hashAlgorithm: HashAlgorithm.SHA3_256
-            // )
             
         }
         

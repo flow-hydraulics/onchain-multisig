@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"testing"
@@ -172,16 +171,12 @@ func ConvertCadenceByteArray(a cadence.Value) (b []uint8) {
 // Signing payload offline
 func SignPayloadOffline(g *gwtf.GoWithTheFlow, message []byte, signingAcct string) (sig string, err error) {
 	s := g.Accounts[signingAcct]
-	fmt.Println("s Private: ", s.PrivateKey)
-	fmt.Println("s Public : ", s.PrivateKey.PublicKey())
-	fmt.Println("s Pub alg: ", s.PrivateKey.PublicKey().Algorithm().String())
-	fmt.Println("s hahalgo: ", s.HashAlgo)
 	signer := crypto.NewInMemorySigner(s.PrivateKey, s.HashAlgo)
+	message = append(flow.UserDomainTag[:], message...)
 	sigbytes, err := signer.Sign(message)
 	if err != nil {
 		return
 	}
-	fmt.Println("sig in bytes: ", sigbytes)
 
 	sig = hex.EncodeToString(sigbytes)
 	return
@@ -221,8 +216,6 @@ func GetSignableDataFromScript(
 			panic("arg type not supported")
 		}
 		signable = append(signable, ConvertCadenceByteArray(b)...)
-
-		fmt.Println("signable: ", signable)
 
 	}
 	return

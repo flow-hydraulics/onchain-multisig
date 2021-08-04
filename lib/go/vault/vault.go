@@ -1,8 +1,6 @@
 package vault
 
 import (
-	"fmt"
-
 	"github.com/bjartek/go-with-the-flow/gwtf"
 	util "github.com/flow-hydraulics/onchain-multisig"
 	"github.com/onflow/cadence"
@@ -23,10 +21,6 @@ func AddVaultToAccount(
 	w1000, _ := cadence.NewUFix64("1000.0")
 	w500, _ := cadence.NewUFix64("500.0")
 	w250, _ := cadence.NewUFix64("250.0")
-
-	fmt.Println("pk1000: ")
-	fmt.Println(pk1000)
-	fmt.Println(g.Accounts["w-1000"].PrivateKey.PublicKey().Encode())
 
 	multiSigPubKeys := []cadence.Value{
 		cadence.String(pk1000[2:]),  // keyListIndex = 0
@@ -85,8 +79,6 @@ func MultiSig_NewPendingTransferPayload(
 	if err != nil {
 		return
 	}
-
-	fmt.Println("Sig: ", sig)
 
 	// TODO add to in the signature
 	//Argument(cadence.NewArray(sigArray)).

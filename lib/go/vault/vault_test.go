@@ -52,7 +52,7 @@ func TestAddNewPendingTransferPayload(t *testing.T) {
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
-	assert.Equal(t, postTxIndex-initTxIndex, int(1))
+	assert.Equal(t, uint64(1), postTxIndex-initTxIndex)
 
 	uuid, err := util.GetVaultUUID(g, vaultAcct)
 	assert.NoError(t, err)
