@@ -31,22 +31,9 @@ pub contract MultiSigFlowToken: FungibleToken {
         // initialize the balance at resource creation time
         init(balance: UFix64) {
             self.balance = balance;
-            self.signatureStore = OnChainMultiSig.SignatureStore(initialSigner: []);
+            self.signatureStore = OnChainMultiSig.SignatureStore(publicKeys: [], pubKeyAttrs: []);
         }
         
-        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
-            // Create keylistElements in the case this is for multisig for the owner account
-            // Default signing algo ECDSA_P256 = 1
-            let signers: [OnChainMultiSig.KeyListElement] = [];
-            let len = multiSigPubKeys.length;
-            var i = 0;
-            while i < len {
-                let ke = OnChainMultiSig.KeyListElement(pk: multiSigPubKeys[i], sa: 1, w: multiSigKeyWeights[i])
-                signers.append(ke);
-                i = i + 1;
-            }
-            self.signatureStore = OnChainMultiSig.SignatureStore(initialSigners: signers)
-        }
 
         pub fun withdraw(amount: UFix64): @FungibleToken.Vault {
             self.balance = self.balance - amount
@@ -75,16 +62,16 @@ pub contract MultiSigFlowToken: FungibleToken {
         pub var signatureStore: OnChainMultiSig.SignatureStore;
         
         /// To submit a new paylaod, i.e. starting a new tx requiring more signatures
-        pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, keyListIndex: Int, sig: [UInt8]) {
+        pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, publicKey: String, sig: [UInt8]) {
             let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.addNewPayload(resourceId: self.uuid, payload: payload, keyListIndex: keyListIndex, sig: sig);
+            let newSignatureStore = manager.addNewPayload(resourceId: self.uuid, payload: payload, publicKey: publicKey, sig: sig);
             self.signatureStore = newSignatureStore
         }
 
         /// To submit a new signature for a pre-exising payload, i.e. adding another signature
-        pub fun addPayloadSignature (txIndex: UInt64, keyListIndex: Int, sig: [UInt8]) {
+        pub fun addPayloadSignature (txIndex: UInt64, publicKey: String, sig: [UInt8]) {
             let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.addPayloadSignature(resourceId: self.uuid, txIndex: txIndex, keyListIndex: keyListIndex, sig: sig);
+            let newSignatureStore = manager.addPayloadSignature(resourceId: self.uuid, txIndex: txIndex, publicKey: publicKey, sig: sig);
             self.signatureStore = newSignatureStore
        }
         /// To execute the multisig transaction iff conditions are met
@@ -102,6 +89,18 @@ pub contract MultiSigFlowToken: FungibleToken {
         pub fun UUID(): UInt64 {
             return self.uuid;
         }; 
+
+        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
+            let newSignatureStore = manager.configureKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights)
+            self.signatureStore = newSignatureStore; 
+        }
+
+        pub fun removeKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
+            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
+            let newSignatureStore = manager.removeKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights)
+            self.signatureStore = newSignatureStore; 
+        }
 
         destroy() {
             MultiSigFlowToken.totalSupply = MultiSigFlowToken.totalSupply - self.balance

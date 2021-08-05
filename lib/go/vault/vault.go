@@ -23,8 +23,8 @@ func AddVaultToAccount(
 	w250, _ := cadence.NewUFix64("250.0")
 
 	multiSigPubKeys := []cadence.Value{
-		cadence.String(pk1000[2:]),  // keyListIndex = 0
-		cadence.String(pk500_1[2:]), // keyListIndex = 1
+		cadence.String(pk1000[2:]),
+		cadence.String(pk500_1[2:]),
 		cadence.String(pk500_2[2:]),
 		cadence.String(pk250_1[2:]),
 		cadence.String(pk250_2[2:]),
@@ -61,7 +61,7 @@ func AccountSignerTransferTokens(
 func MultiSig_NewPendingTransferPayload(
 	g *gwtf.GoWithTheFlow,
 	amount string,
-	keyListIndex int,
+	publicKey string,
 	signerAcct string,
 	vaultAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
@@ -84,7 +84,7 @@ func MultiSig_NewPendingTransferPayload(
 	//Argument(cadence.NewArray(sigArray)).
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
-		IntArgument(keyListIndex).
+		StringArgument(publicKey).
 		StringArgument(sig).
 		AccountArgument(vaultAcct).
 		StringArgument(method).

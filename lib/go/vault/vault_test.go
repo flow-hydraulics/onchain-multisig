@@ -20,9 +20,9 @@ func TestAddVaultToAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, balance.String(), "0.00000000")
 
-	keyListIndex, err := util.GetKeyListIndex(g, "vaulted-account")
+	keys, err := util.GetStoreKeys(g, "vaulted-account")
 	assert.NoError(t, err)
-	assert.Equal(t, keyListIndex.Int64(), int64(5))
+	assert.Len(t, keys, 5)
 
 	txIndex, err := util.GetTxIndex(g, "vaulted-account")
 	assert.NoError(t, err)
@@ -40,14 +40,14 @@ func TestAddVaultToAccount(t *testing.T) {
 func TestAddNewPendingTransferPayload(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.5"
-	signerKeyListIndex := 0
+	pk1000 := g.Accounts["w-1000"].PrivateKey.PublicKey().String()
 	signerAcct := "w-1000"
 	vaultAcct := "vaulted-account"
 
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	events, err := MultiSig_NewPendingTransferPayload(g, transferAmount, signerKeyListIndex, signerAcct, vaultAcct)
+	events, err := MultiSig_NewPendingTransferPayload(g, transferAmount, pk1000[2:], signerAcct, vaultAcct)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)

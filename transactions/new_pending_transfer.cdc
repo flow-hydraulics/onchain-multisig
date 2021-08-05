@@ -3,7 +3,7 @@
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 
-transaction (keyListIndex: Int, sig: String, addr: Address, method: String, amount: UFix64) {
+transaction (publicKey: String, sig: String, addr: Address, method: String, amount: UFix64) {
     prepare(oneOfMultiSig: AuthAccount) {
     }
 
@@ -17,6 +17,6 @@ transaction (keyListIndex: Int, sig: String, addr: Address, method: String, amou
         let amountArg = OnChainMultiSig.PayloadArg(t: Type<UFix64>(), v: amount);
         // TODO Add to as arg
         let p = OnChainMultiSig.PayloadDetails(method: method, args: [amountArg]);
-        return pubSigRef.addNewPayload(payload: p, keyListIndex: keyListIndex, sig: sig.decodeHex()) 
+        return pubSigRef.addNewPayload(payload: p, publicKey: publicKey, sig: sig.decodeHex()) 
     }
 }

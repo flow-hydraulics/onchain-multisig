@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io/ioutil"
-	"math/big"
 	"testing"
 	"time"
 
@@ -118,14 +117,14 @@ func GetBalance(g *gwtf.GoWithTheFlow, account string) (result cadence.UFix64, e
 	return
 }
 
-func GetKeyListIndex(g *gwtf.GoWithTheFlow, account string) (result *big.Int, err error) {
-	filename := "../../../scripts/get_store_key_list_index.cdc"
+func GetStoreKeys(g *gwtf.GoWithTheFlow, account string) (result []string, err error) {
+	filename := "../../../scripts/get_store_keys.cdc"
 	script := ParseCadenceTemplate(filename)
 	value, err := g.ScriptFromFile(filename, script).AccountArgument(account).RunReturns()
 	if err != nil {
 		return
 	}
-	result = value.ToGoValue().(*big.Int)
+	result = ConvertCadenceStringArray(value)
 	return
 }
 
@@ -163,7 +162,16 @@ func ConvertCadenceByteArray(a cadence.Value) (b []uint8) {
 		b = append(b, e.(uint8))
 	}
 	return
+}
 
+func ConvertCadenceStringArray(a cadence.Value) (b []string) {
+	// type assertion of interface
+	i := a.ToGoValue().([]interface{})
+
+	for _, e := range i {
+		b = append(b, e.(string))
+	}
+	return
 }
 
 // Multisig utility functions
