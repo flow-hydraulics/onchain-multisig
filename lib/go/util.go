@@ -203,7 +203,7 @@ func GetSignableDataFromScript(
 	cMethod, err := g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.String(method))).RunReturns()
 	signable = append(signable, ConvertCadenceByteArray(cMethod)...)
 
-    // TODO: require cadence values instead of interface{}
+	// TODO: require cadence values instead of interface{}
 	for _, arg := range args {
 		var b cadence.Value
 		switch arg.(type) {

@@ -123,7 +123,7 @@ func TestExecutePayloadWithHalfAuthShouldFail(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(1), postTxIndex-initTxIndex)
 
-    // This should fail because the weight is less than 500
+	// This should fail because the weight is less than 500
 	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct)
 	assert.Error(t, err)
 }

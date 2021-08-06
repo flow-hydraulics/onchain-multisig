@@ -70,8 +70,7 @@ func MultiSig_NewPendingTransferPayload(
 	txScript := util.ParseCadenceTemplate(txFilename)
 
 	method := "transfer"
-    toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
-
+	toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
 
 	signable, err := util.GetSignableDataFromScript(g, method, amount, toAddr)
 	if err != nil {
@@ -90,7 +89,7 @@ func MultiSig_NewPendingTransferPayload(
 		AccountArgument(vaultAcct).
 		StringArgument(method).
 		UFix64Argument(amount).
-        AccountArgument(to).
+		AccountArgument(to).
 		Run()
 	events = util.ParseTestEvents(e)
 	return
