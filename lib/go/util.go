@@ -206,10 +206,10 @@ func GetSignableDataFromScript(
 	// TODO: require cadence values instead of interface{}
 	for _, arg := range args {
 		var b cadence.Value
-		switch arg.(type) {
+		switch arg := arg.(type) {
 		case string:
 			// TODO: do not assume all args with string is for UFix64
-			ufix64, err := cadence.NewUFix64(arg.(string))
+			ufix64, err := cadence.NewUFix64(arg)
 			if err != nil {
 				return nil, err
 			}
@@ -218,12 +218,12 @@ func GetSignableDataFromScript(
 				return nil, err
 			}
 		case uint64:
-			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.UInt64(arg.(uint64)))).RunReturns()
+			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.UInt64(arg))).RunReturns()
 			if err != nil {
 				return nil, err
 			}
 		case cadence.Value:
-			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(arg.(cadence.Value))).RunReturns()
+			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(arg)).RunReturns()
 			if err != nil {
 				return nil, err
 			}
