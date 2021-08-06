@@ -77,9 +77,12 @@ func MultiSig_NewPendingTransferPayload(
 	txScript := util.ParseCadenceTemplate(txFilename)
 
 	method := "transfer"
+	ufix64, err := cadence.NewUFix64(amount)
+	if err != nil {
+		return nil, err
+	}
 	toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
-
-	signable, err := util.GetSignableDataFromScript(g, method, amount, toAddr)
+	signable, err := util.GetSignableDataFromScript(g, method, ufix64, toAddr)
 	if err != nil {
 		return
 	}
@@ -115,9 +118,12 @@ func MultiSig_NewPayloadSignature(
 	txScript := util.ParseCadenceTemplate(txFilename)
 
 	method := "transfer"
+	ufix64, err := cadence.NewUFix64(amount)
+	if err != nil {
+		return nil, err
+	}
 	toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
-
-	signable, err := util.GetSignableDataFromScript(g, method, amount, toAddr)
+	signable, err := util.GetSignableDataFromScript(g, method, ufix64, toAddr)
 	if err != nil {
 		return
 	}

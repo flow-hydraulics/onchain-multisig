@@ -195,7 +195,7 @@ func SignPayloadOffline(g *gwtf.GoWithTheFlow, message []byte, signingAcct strin
 func GetSignableDataFromScript(
 	g *gwtf.GoWithTheFlow,
 	method string,
-	args ...interface{},
+	args ...cadence.Value,
 ) (signable []byte, err error) {
 	filename := "../../../scripts/calc_signable_data.cdc"
 	script := ParseCadenceTemplate(filename)
@@ -203,35 +203,13 @@ func GetSignableDataFromScript(
 	cMethod, err := g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.String(method))).RunReturns()
 	signable = append(signable, ConvertCadenceByteArray(cMethod)...)
 
-	// TODO: require cadence values instead of interface{}
 	for _, arg := range args {
 		var b cadence.Value
-		switch arg := arg.(type) {
-		case string:
-			// TODO: do not assume all args with string is for UFix64
-			ufix64, err := cadence.NewUFix64(arg)
-			if err != nil {
-				return nil, err
-			}
-			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(ufix64)).RunReturns()
-			if err != nil {
-				return nil, err
-			}
-		case uint64:
-			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.UInt64(arg))).RunReturns()
-			if err != nil {
-				return nil, err
-			}
-		case cadence.Value:
-			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(arg)).RunReturns()
-			if err != nil {
-				return nil, err
-			}
-		default:
-			panic("arg type not supported")
+		b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(arg)).RunReturns()
+		if err != nil {
+			return nil, err
 		}
 		signable = append(signable, ConvertCadenceByteArray(b)...)
-
 	}
 	return
 }
