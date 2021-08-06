@@ -69,7 +69,6 @@ func MultiSig_NewPendingTransferPayload(
 	g *gwtf.GoWithTheFlow,
 	amount string,
 	to string,
-	publicKey string,
 	signerAcct string,
 	vaultAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
@@ -92,9 +91,11 @@ func MultiSig_NewPendingTransferPayload(
 		return
 	}
 
+	pubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
+
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
-		StringArgument(publicKey).
+		StringArgument(pubKey).
 		StringArgument(sig).
 		AccountArgument(vaultAcct).
 		StringArgument(method).
@@ -110,7 +111,6 @@ func MultiSig_NewPayloadSignature(
 	amount string,
 	to string,
 	txIndex uint64,
-	publicKey string,
 	signerAcct string,
 	vaultAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
@@ -133,10 +133,11 @@ func MultiSig_NewPayloadSignature(
 		return
 	}
 
+	pubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
 		UInt64Argument(txIndex).
-		StringArgument(publicKey).
+		StringArgument(pubKey).
 		StringArgument(sig).
 		AccountArgument(vaultAcct).
 		Run()

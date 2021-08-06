@@ -79,6 +79,15 @@ pub contract MultiSigFlowToken: FungibleToken {
             let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
             let p = manager.readyForExecution(txIndex: txIndex) ?? panic ("TX not ready for execution")
             switch p.method {
+                case "configureKeys":
+                    let pubKey = p.args[0].value as? [String] ?? panic ("cannot downcast public key");
+                    let weight = p.args[1].value as? [UFix64] ?? panic ("cannot downcast weight");
+                    let newSignatureStore = manager.configureKeys(pks: pubKey, kws: weight)
+                    self.signatureStore = newSignatureStore; 
+                case "removeKeys":
+                    let pubKey = p.args[0].value as? [String] ?? panic ("cannot downcast public key");
+                    let newSignatureStore = manager.removeKeys(pks: pubKey)
+                    self.signatureStore = newSignatureStore; 
                 case "withdraw":
                     let amount  = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
                     return <- self.withdraw(amount: amount);
@@ -106,9 +115,9 @@ pub contract MultiSigFlowToken: FungibleToken {
             self.signatureStore = newSignatureStore; 
         }
 
-        pub fun removeKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
+        pub fun removeKeys( multiSigPubKeys: [String]) {
             let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.removeKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights)
+            let newSignatureStore = manager.removeKeys(pks: multiSigPubKeys)
             self.signatureStore = newSignatureStore; 
         }
 

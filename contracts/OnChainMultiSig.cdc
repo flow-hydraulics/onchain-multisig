@@ -122,7 +122,6 @@ pub contract OnChainMultiSig {
             return s; 
         }
         
-        // Currently not supporting MultiSig
         pub fun configureKeys (pks: [String], kws: [UFix64]): SignatureStore {
             var i: Int =  0;
             while (i < pks.length) {
@@ -130,13 +129,15 @@ pub contract OnChainMultiSig {
                 self.signatureStore.keyList.insert(key: pks[i], a)
                 i = i + 1;
             }
-
             return self.signatureStore
         }
 
-        // Currently not supporting MultiSig
-        // TODO remove keys
-        pub fun removeKeys (pks: [String], kws: [UFix64]): SignatureStore {
+        pub fun removeKeys (pks: [String]): SignatureStore {
+            var i: Int =  0;
+            while (i < pks.length) {
+                self.signatureStore.keyList.remove(key:pks[i])
+                i = i + 1;
+            }
             return self.signatureStore
         }
         
