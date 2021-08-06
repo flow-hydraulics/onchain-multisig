@@ -141,8 +141,14 @@ pub contract OnChainMultiSig {
         }
         
         pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, publicKey: String, sig: [UInt8]): SignatureStore {
+            assert(self.signatureStore.keyList.containsKey(publicKey), message: "Public key is not a registered signer");
+
+            // The keyIndex is also 0 for the first key
+            let keyListSig = [Crypto.KeyListSignature(keyIndex: 0, signature: sig)]
+
             // check if the payloadSig is signed by one of the account's keys, preventing others from adding to storage
-            if (self.verifyIsOneOfSigners(payload: payload, txIndex: nil, pk: publicKey, sig: sig) == false) {
+            let approvalWeight = self.verifySigners(payload: payload, txIndex: nil, pks: [publicKey], sigs: keyListSig)
+            if ( approvalWeight == nil) {
                 panic ("invalid signer")
             }
 
@@ -152,10 +158,8 @@ pub contract OnChainMultiSig {
 
             self.signatureStore.payloads.insert(key: txIndex, payload);
 
-            // The keyIndex is also 0 for the first key
-            let payloadSigDetails = 
-                PayloadSigDetails(
-                    keyListSignatures: [Crypto.KeyListSignature( keyIndex: 0, signature: sig)],
+            let payloadSigDetails = PayloadSigDetails(
+                    keyListSignatures: keyListSig,
                     pubKeys: [publicKey]
                 )
             
@@ -170,54 +174,89 @@ pub contract OnChainMultiSig {
 
         pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, publicKey: String, sig: [UInt8]): SignatureStore {
             assert(self.signatureStore.payloads.containsKey(txIndex), message: "Payload has not been added");
+            assert(self.signatureStore.keyList.containsKey(publicKey), message: "Public key is not a registered signer");
 
-            // check if the the signer is the accounting owning this signer by using data as the one in payloads
-            if (self.verifyIsOneOfSigners(payload: nil, txIndex: txIndex, pk: publicKey, sig: sig) == false) {
+            // This is a temp keyListSig list that is used to verify a single signature so we use keyIndex as 0
+            // The correct keyIndex will overwrite the 0 after we know it is a valid signature
+            var keyListSig = Crypto.KeyListSignature( keyIndex: 0, signature: sig)
+
+            // check if the payloadSig is signed by one of the account's keys, preventing others from adding to storage
+            let approvalWeight = self.verifySigners(payload: nil, txIndex: txIndex, pks: [publicKey], sigs: [keyListSig])
+            if ( approvalWeight == nil) {
                 panic ("invalid signer")
             }
 
             let currentIndex = self.signatureStore.payloadSigs[txIndex]!.keyListSignatures.length
-            self.signatureStore.payloadSigs[txIndex]!.keyListSignatures.append(Crypto.KeyListSignature(keyIndex: currentIndex, signature: sig));
+            keyListSig = Crypto.KeyListSignature(keyIndex: currentIndex, signature: sig)
+            self.signatureStore.payloadSigs[txIndex]!.keyListSignatures.append(keyListSig);
             self.signatureStore.payloadSigs[txIndex]!.pubKeys.append(publicKey);
 
-            // if weight of all the signatures above threshold, call executeTransaction
             emit NewPayloadSigAdded(resourceId: resourceId, txIndex: txIndex)
             return self.signatureStore
         }
 
         pub fun readyForExecution(txIndex: UInt64): PayloadDetails? {
             assert(self.signatureStore.payloads.containsKey(txIndex), message: "No payload for such index");
-            // 1. returns the signed weights of the particular transaction by Transaction index
-            // 2. if not enough weight etc, return nil
-            let pd = self.signatureStore.payloads.remove(key: txIndex)!;
-            return pd;
+            let pks = self.signatureStore.payloadSigs[txIndex]!.pubKeys;
+            let sigs = self.signatureStore.payloadSigs[txIndex]!.keyListSignatures;
+            let approvalWeight = self.verifySigners(payload: nil, txIndex: txIndex, pks: pks, sigs: sigs)
+            if (approvalWeight == nil) {
+                return nil
+            }
+            if (approvalWeight! >= 1000.0) {
+                self.signatureStore.payloadSigs.remove(key: txIndex)!;
+                let pd = self.signatureStore.payloads.remove(key: txIndex)!;
+                return pd;
+            } else {
+                return nil;
+            }
         }
         
-        pub fun verifyIsOneOfSigners (payload: PayloadDetails?, txIndex: UInt64?, pk: String, sig: [UInt8]): Bool {
+        pub fun verifySigners (payload: PayloadDetails?, txIndex: UInt64?, pks: [String], sigs: [Crypto.KeyListSignature]): UFix64? {
             assert(payload != nil || txIndex != nil, message: "cannot verify signature without payload or txIndex");
             assert(!(payload != nil && txIndex != nil), message: "cannot verify signature without payload or txIndex");
-            assert(self.signatureStore.keyList.containsKey(pk), message: "no signer stored for multisig")
+            assert(pks.length == sigs.length, message: "cannot verify signatures without corresponding public keys");
             
-            let pk = PublicKey(
-                publicKey: pk.decodeHex(),
-                signatureAlgorithm: SignatureAlgorithm(rawValue: self.signatureStore.keyList[pk]!.sigAlgo) ?? panic ("invalid signature algo")
-            )
-
+            var totalAuthorisedWeight: UFix64 = 0.0;
+            var keyList = Crypto.KeyList();
             var payloadInBytes: [UInt8] = []
-
             if (payload != nil) {
                 payloadInBytes = self.getSignableData(payload: payload!);
             } else {
                 let p = self.signatureStore.payloads[txIndex!];
                 payloadInBytes = self.getSignableData(payload: p!);
             }
+
+            var i = 0;
+            while (i < pks.length) {
+                // Check if the public key is a registered signer
+                if (self.signatureStore.keyList[pks[i]] == nil){
+                    continue;
+                }
+
+                let pk = PublicKey(
+                    publicKey: pks[i].decodeHex(),
+                    signatureAlgorithm: SignatureAlgorithm(rawValue: self.signatureStore.keyList[pks[i]]!.sigAlgo) ?? panic ("invalid signature algo")
+                )
+                
+                keyList.add(
+                    pk, 
+                    hashAlgorithm: HashAlgorithm.SHA3_256,
+                    weight: self.signatureStore.keyList[pks[i]]!.weight
+                )
+                totalAuthorisedWeight = totalAuthorisedWeight + self.signatureStore.keyList[pks[i]]!.weight
+                i = i + 1;
+            }
             
-            return pk.verify(
-                signature: sig,
+            let isValid = keyList.verify(
+                signatureSet: sigs,
                 signedData: payloadInBytes,
-                domainSeparationTag: "FLOW-V0.0-user",
-                hashAlgorithm: HashAlgorithm.SHA3_256
             )
+            if (isValid) {
+                return totalAuthorisedWeight
+            } else {
+                return nil
+            }
             
         }
         
