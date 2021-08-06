@@ -80,8 +80,18 @@ pub contract MultiSigFlowToken: FungibleToken {
             let p = manager.readyForExecution(txIndex: txIndex) ?? panic ("TX not ready for execution")
             switch p.method {
                 case "withdraw":
-                    let m = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
-                    return <- self.withdraw(amount: m);
+                    let amount  = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
+                    return <- self.withdraw(amount: amount);
+                case "transfer":
+                    let amount = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
+                    let to = p.args[1].value as? Address ?? panic ("cannot downcast address");
+                    let toAcct = getAccount(to);
+                    let receiver = toAcct.getCapability(MultiSigFlowToken.VaultReceiverPubPath)!
+                        .borrow<&{FungibleToken.Receiver}>()
+                        ?? panic("Unable to borrow receiver reference for recipient")
+
+                    let v <- self.withdraw(amount: amount);
+                    receiver.deposit(from: <- v)
             }
             return nil;
         }
