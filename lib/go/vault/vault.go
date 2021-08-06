@@ -6,6 +6,12 @@ import (
 	"github.com/onflow/cadence"
 )
 
+const Acct1000 = "w-1000"
+const Acct500_1 = "w-500-1"
+const Acct500_2 = "w-500-2"
+const Acct250_1 = "w-250-1"
+const Acct250_2 = "w-250-2"
+
 func AddVaultToAccount(
 	g *gwtf.GoWithTheFlow,
 	vaultAcct string,
@@ -13,11 +19,12 @@ func AddVaultToAccount(
 	txFilename := "../../../transactions/create_vault.cdc"
 	txScript := util.ParseCadenceTemplate(txFilename)
 
-	pk1000 := g.Accounts["w-1000"].PrivateKey.PublicKey().String()
-	pk500_1 := g.Accounts["w-500-1"].PrivateKey.PublicKey().String()
-	pk500_2 := g.Accounts["w-500-2"].PrivateKey.PublicKey().String()
-	pk250_1 := g.Accounts["w-250-1"].PrivateKey.PublicKey().String()
-	pk250_2 := g.Accounts["w-250-2"].PrivateKey.PublicKey().String()
+	pk1000 := g.Accounts[Acct1000].PrivateKey.PublicKey().String()
+	pk500_1 := g.Accounts[Acct500_1].PrivateKey.PublicKey().String()
+	pk500_2 := g.Accounts[Acct500_2].PrivateKey.PublicKey().String()
+	pk250_1 := g.Accounts[Acct250_1].PrivateKey.PublicKey().String()
+	pk250_2 := g.Accounts[Acct250_2].PrivateKey.PublicKey().String()
+
 	w1000, _ := cadence.NewUFix64("1000.0")
 	w500, _ := cadence.NewUFix64("500.0")
 	w250, _ := cadence.NewUFix64("250.0")

@@ -42,14 +42,13 @@ func TestAddNewPendingTransferPayloadWithFullMultiSigAccount(t *testing.T) {
 	transferAmount := "15.5"
 	transferTo := "owner"
 
-	pk1000 := g.Accounts["w-1000"].PrivateKey.PublicKey().String()
-	signerAcct := "w-1000"
+	pk1000 := g.Accounts[Acct1000].PrivateKey.PublicKey().String()
 	vaultAcct := "vaulted-account"
 
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	events, err := MultiSig_NewPendingTransferPayload(g, transferAmount, transferTo, pk1000[2:], signerAcct, vaultAcct)
+	events, err := MultiSig_NewPendingTransferPayload(g, transferAmount, transferTo, pk1000[2:], Acct1000, vaultAcct)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -112,14 +111,13 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// First add a payload; total authorised weight is 500
 	//
-	pk500_1 := g.Accounts["w-500-1"].PrivateKey.PublicKey().String()
-	signerAcct1 := "w-500-1"
+	pk500_1 := g.Accounts[Acct500_1].PrivateKey.PublicKey().String()
 	vaultAcct := "vaulted-account"
 
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_NewPendingTransferPayload(g, transferAmount, transferTo, pk500_1[2:], signerAcct1, vaultAcct)
+	_, err = MultiSig_NewPendingTransferPayload(g, transferAmount, transferTo, pk500_1[2:], Acct500_1, vaultAcct)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -129,10 +127,9 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// Add another signature; total weight now is 500 + 250
 	//
-	pk250_1 := g.Accounts["w-250-1"].PrivateKey.PublicKey().String()
-	signerAcct250 := "w-250-1"
+	pk250_1 := g.Accounts[Acct250_1].PrivateKey.PublicKey().String()
 
-	events, err := MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, pk250_1[2:], signerAcct250, vaultAcct)
+	events, err := MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, pk250_1[2:], Acct250_1, vaultAcct)
 	assert.NoError(t, err)
 
 	uuid, err := util.GetVaultUUID(g, vaultAcct)
@@ -149,10 +146,9 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// Add another signature; total weight now is 500 + 250 + 500
 	//
-	pk500_2 := g.Accounts["w-500-2"].PrivateKey.PublicKey().String()
-	signerAcct2 := "w-500-2"
+	pk500_2 := g.Accounts[Acct500_2].PrivateKey.PublicKey().String()
 
-	_, err = MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, pk500_2[2:], signerAcct2, vaultAcct)
+	_, err = MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, pk500_2[2:], Acct500_2, vaultAcct)
 	assert.NoError(t, err)
 
 	initFromBalance, err := util.GetBalance(g, "vaulted-account")
