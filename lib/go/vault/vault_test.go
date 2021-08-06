@@ -103,12 +103,15 @@ func TestExecutePendingTransnferFromFullAcct(t *testing.T) {
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
 }
 
-func TestExecutePayloadWithHalfAuthShouldFail(t *testing.T) {
+func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.50000000"
 	transferTo := "owner"
 	payerAcct := "owner"
 
+	//
+	// First add a payload; total authorised weight is 500
+	//
 	pk500_1 := g.Accounts["w-500-1"].PrivateKey.PublicKey().String()
 	signerAcct1 := "w-500-1"
 	vaultAcct := "vaulted-account"
@@ -123,7 +126,42 @@ func TestExecutePayloadWithHalfAuthShouldFail(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(1), postTxIndex-initTxIndex)
 
-	// This should fail because the weight is less than 500
+	//
+	// Add another signature; total weight now is 500 + 250
+	//
+	pk250_1 := g.Accounts["w-250-1"].PrivateKey.PublicKey().String()
+	signerAcct250 := "w-250-1"
+
+	events, err := MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, pk250_1[2:], signerAcct250, vaultAcct)
+	assert.NoError(t, err)
+
+	uuid, err := util.GetVaultUUID(g, vaultAcct)
+	assert.NoError(t, err)
+	util.NewExpectedEvent("OnChainMultiSig", "NewPayloadSigAdded").
+		AddField("resourceId", strconv.Itoa(int(uuid))).
+		AddField("txIndex", strconv.Itoa(int(postTxIndex))).
+		AssertEqual(t, events[0])
+
+	// This should fail because the weight is less than 1000
 	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct)
 	assert.Error(t, err)
+
+	//
+	// Add another signature; total weight now is 500 + 250 + 500
+	//
+	pk500_2 := g.Accounts["w-500-2"].PrivateKey.PublicKey().String()
+	signerAcct2 := "w-500-2"
+
+	_, err = MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, pk500_2[2:], signerAcct2, vaultAcct)
+	assert.NoError(t, err)
+
+	initFromBalance, err := util.GetBalance(g, "vaulted-account")
+	assert.NoError(t, err)
+
+	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct)
+	assert.NoError(t, err)
+
+	postFromBalance, err := util.GetBalance(g, "vaulted-account")
+	assert.NoError(t, err)
+	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
 }

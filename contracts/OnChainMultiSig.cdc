@@ -135,8 +135,8 @@ pub contract OnChainMultiSig {
         }
 
         // Currently not supporting MultiSig
+        // TODO remove keys
         pub fun removeKeys (pks: [String], kws: [UFix64]): SignatureStore {
-            // TODO
             return self.signatureStore
         }
         
