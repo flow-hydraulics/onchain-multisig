@@ -61,6 +61,7 @@ func AccountSignerTransferTokens(
 func MultiSig_NewPendingTransferPayload(
 	g *gwtf.GoWithTheFlow,
 	amount string,
+	to string,
 	publicKey string,
 	signerAcct string,
 	vaultAcct string,
@@ -69,8 +70,10 @@ func MultiSig_NewPendingTransferPayload(
 	txScript := util.ParseCadenceTemplate(txFilename)
 
 	method := "transfer"
+    toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
 
-	signable, err := util.GetSignableDataFromScript(g, method, amount)
+
+	signable, err := util.GetSignableDataFromScript(g, method, amount, toAddr)
 	if err != nil {
 		return
 	}
@@ -80,8 +83,6 @@ func MultiSig_NewPendingTransferPayload(
 		return
 	}
 
-	// TODO add to in the signature
-	//Argument(cadence.NewArray(sigArray)).
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
 		StringArgument(publicKey).
@@ -89,25 +90,25 @@ func MultiSig_NewPendingTransferPayload(
 		AccountArgument(vaultAcct).
 		StringArgument(method).
 		UFix64Argument(amount).
+        AccountArgument(to).
 		Run()
 	events = util.ParseTestEvents(e)
 	return
 }
 
-//func MultiSig_MasterMinterExecuteTx(
-//	g *gwtf.GoWithTheFlow,
-//	index uint64,
-//	ownerAcct string,
-//) (events []*gwtf.FormatedEvent, err error) {
-//	txFilename := "../../../transactions/owner/multisig/executeTx.cdc"
-//	txScript := util.ParseCadenceTemplate(txFilename)
-//
-//	e, err := g.TransactionFromFile(txFilename, txScript).
-//		SignProposeAndPayAs(ownerAcct).
-//		AccountArgument("owner").
-//		UInt64Argument(index).
-//		Run()
-//	events = util.ParseTestEvents(e)
-//	return
-//
-//}
+func MultiSig_VaultExecuteTx(
+	g *gwtf.GoWithTheFlow,
+	index uint64,
+	payerAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/executeTx.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument("vaulted-account").
+		UInt64Argument(index).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}

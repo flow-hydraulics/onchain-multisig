@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -56,6 +57,7 @@ func ParseTestEvents(events []flow.Event) (formatedEvents []*gwtf.FormatedEvent)
 	for _, e := range events {
 		formatedEvents = append(formatedEvents, gwtf.ParseEvent(e, uint64(0), time.Now(), nil))
 	}
+	fmt.Println(formatedEvents)
 	return
 }
 
@@ -201,7 +203,7 @@ func GetSignableDataFromScript(
 	cMethod, err := g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.String(method))).RunReturns()
 	signable = append(signable, ConvertCadenceByteArray(cMethod)...)
 
-	// amount, err := cadence.NewUFix64(value)
+    // TODO: require cadence values instead of interface{}
 	for _, arg := range args {
 		var b cadence.Value
 		switch arg.(type) {
@@ -217,6 +219,11 @@ func GetSignableDataFromScript(
 			}
 		case uint64:
 			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.UInt64(arg.(uint64)))).RunReturns()
+			if err != nil {
+				return nil, err
+			}
+		case cadence.Value:
+			b, err = g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(arg.(cadence.Value))).RunReturns()
 			if err != nil {
 				return nil, err
 			}
