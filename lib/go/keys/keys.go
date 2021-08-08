@@ -6,6 +6,18 @@ import (
 	"github.com/onflow/cadence"
 )
 
+func ContainsKey(g *gwtf.GoWithTheFlow, resourceAcct string, key string) (result bool, err error) {
+	keys, err := util.GetStoreKeys(g, resourceAcct)
+	result = false
+	for _, k := range keys {
+		if k == key {
+			result = true
+			return
+		}
+	}
+	return
+}
+
 func MultiSig_NewRemoveSignerPayload(
 	g *gwtf.GoWithTheFlow,
 	acctToRemove string,
