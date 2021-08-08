@@ -91,11 +91,10 @@ func MultiSig_NewPendingTransferPayload(
 		return
 	}
 
-	pubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
-
+	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
-		StringArgument(pubKey).
+		StringArgument(signerPubKey[2:]).
 		StringArgument(sig).
 		AccountArgument(vaultAcct).
 		StringArgument(method).
@@ -114,9 +113,6 @@ func MultiSig_NewPayloadSignature(
 	signerAcct string,
 	vaultAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
-	txFilename := "../../../transactions/add_payload_signature.cdc"
-	txScript := util.ParseCadenceTemplate(txFilename)
-
 	method := "transfer"
 	ufix64, err := cadence.NewUFix64(amount)
 	if err != nil {
@@ -133,29 +129,21 @@ func MultiSig_NewPayloadSignature(
 		return
 	}
 
-	pubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
-	e, err := g.TransactionFromFile(txFilename, txScript).
-		SignProposeAndPayAs(signerAcct).
-		UInt64Argument(txIndex).
-		StringArgument(pubKey).
-		StringArgument(sig).
-		AccountArgument(vaultAcct).
-		Run()
-	events = util.ParseTestEvents(e)
-	return
+	return util.MultiSigVault_NewPayloadSignature(g, txIndex, sig, signerAcct, vaultAcct)
 }
 
 func MultiSig_VaultExecuteTx(
 	g *gwtf.GoWithTheFlow,
 	index uint64,
 	payerAcct string,
+	vaultAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
 	txFilename := "../../../transactions/executeTx.cdc"
 	txScript := util.ParseCadenceTemplate(txFilename)
 
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(payerAcct).
-		AccountArgument("vaulted-account").
+		AccountArgument(vaultAcct).
 		UInt64Argument(index).
 		Run()
 	events = util.ParseTestEvents(e)

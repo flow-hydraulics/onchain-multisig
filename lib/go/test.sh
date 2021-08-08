@@ -50,3 +50,4 @@ go clean -testcache
 
 go run scripts/deploy/deploy.go
 go test ./vault -v
+go test ./keys -v

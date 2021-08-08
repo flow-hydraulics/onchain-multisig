@@ -85,15 +85,16 @@ func TestExecutePendingTransnferFromFullAcct(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.50000000"
 	payerAcct := "owner"
+	vaultAcct := "vaulted-account"
 	txIndex := uint64(1)
 
-	initFromBalance, err := util.GetBalance(g, "vaulted-account")
+	initFromBalance, err := util.GetBalance(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_VaultExecuteTx(g, txIndex, payerAcct)
+	_, err = MultiSig_VaultExecuteTx(g, txIndex, payerAcct, vaultAcct)
 	assert.NoError(t, err)
 
-	postFromBalance, err := util.GetBalance(g, "vaulted-account")
+	postFromBalance, err := util.GetBalance(g, vaultAcct)
 	assert.NoError(t, err)
 
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
@@ -134,7 +135,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 		AssertEqual(t, events[0])
 
 	// This should fail because the weight is less than 1000
-	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct)
+	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct, vaultAcct)
 	assert.Error(t, err)
 
 	//
@@ -146,7 +147,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	initFromBalance, err := util.GetBalance(g, "vaulted-account")
 	assert.NoError(t, err)
 
-	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct)
+	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct, vaultAcct)
 	assert.NoError(t, err)
 
 	postFromBalance, err := util.GetBalance(g, "vaulted-account")

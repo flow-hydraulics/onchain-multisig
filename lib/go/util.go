@@ -130,6 +130,21 @@ func GetStoreKeys(g *gwtf.GoWithTheFlow, account string) (result []string, err e
 	return
 }
 
+func GetKeyWeight(g *gwtf.GoWithTheFlow, resourceAcct string, signerAcct string) (result cadence.UFix64, err error) {
+	filename := "../../../scripts/get_key_weight.cdc"
+	script := ParseCadenceTemplate(filename)
+	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()[2:]
+	value, err := g.ScriptFromFile(filename, script).
+		AccountArgument(resourceAcct).
+		StringArgument(signerPubKey).
+		RunReturns()
+	if err != nil {
+		return
+	}
+	result = value.(cadence.UFix64)
+	return
+}
+
 func GetTxIndex(g *gwtf.GoWithTheFlow, account string) (result uint64, err error) {
 	filename := "../../../scripts/get_store_tx_index.cdc"
 	script := ParseCadenceTemplate(filename)
@@ -211,5 +226,27 @@ func GetSignableDataFromScript(
 		}
 		signable = append(signable, ConvertCadenceByteArray(b)...)
 	}
+	return
+}
+
+func MultiSigVault_NewPayloadSignature(
+	g *gwtf.GoWithTheFlow,
+	txIndex uint64,
+	sig string,
+	signerAcct string,
+	resourceAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/add_payload_signature.cdc"
+	txScript := ParseCadenceTemplate(txFilename)
+
+	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(signerAcct).
+		UInt64Argument(txIndex).
+		StringArgument(signerPubKey[2:]).
+		StringArgument(sig).
+		AccountArgument(resourceAcct).
+		Run()
+	events = ParseTestEvents(e)
 	return
 }
