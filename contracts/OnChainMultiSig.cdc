@@ -5,22 +5,11 @@ pub contract OnChainMultiSig {
     pub event NewPayloadAdded(resourceId: UInt64, txIndex: UInt64);
     pub event NewPayloadSigAdded(resourceId: UInt64, txIndex: UInt64);
 
-    /// Argument for payload
-    pub struct PayloadArg {
-        pub let type: Type;
-        pub let value: AnyStruct;
-        
-        init(t: Type, v: AnyStruct) {
-            self.type = t;
-            self.value = v
-        }
-    }
-
     pub struct PayloadDetails {
         pub var method: String;
-        pub var args: [PayloadArg];
+        pub var args: [AnyStruct];
         
-        init(method: String, args: [PayloadArg]) {
+        init(method: String, args: [AnyStruct]) {
             self.method = method;
             self.args = args;
         }
@@ -101,18 +90,18 @@ pub contract OnChainMultiSig {
             var s = payload.method.utf8;
             for a in payload.args {
                 var b: [UInt8] = [];
-                switch a.type {
+                switch a.getType() {
                     case Type<String>():
-                        let temp = a.value as? String;
+                        let temp = a as? String;
                         b = temp!.utf8; 
                     case Type<UInt64>():
-                        let temp = a.value as? UInt64;
+                        let temp = a as? UInt64;
                         b = temp!.toBigEndianBytes(); 
                     case Type<UFix64>():
-                        let temp = a.value as? UFix64;
+                        let temp = a as? UFix64;
                         b = temp!.toBigEndianBytes(); 
                     case Type<Address>():
-                        let temp = a.value as? Address;
+                        let temp = a as? Address;
                         b = temp!.toBytes(); 
                     default:
                         panic ("Payload arg type not supported")

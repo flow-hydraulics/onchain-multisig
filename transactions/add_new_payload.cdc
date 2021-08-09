@@ -3,7 +3,7 @@
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 
-transaction (publicKey: String, sig: String, addr: Address, method: String, amount: UFix64, toAddr: Address) {
+transaction (addr: Address, publicKey: String, sig: String, method: String, args: [AnyStruct]) {
     prepare(oneOfMultiSig: AuthAccount) {
     }
 
@@ -13,10 +13,8 @@ transaction (publicKey: String, sig: String, addr: Address, method: String, amou
         let pubSigRef = vaultedAcct.getCapability(MultiSigFlowToken.VaultPubSigner)
             .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
             ?? panic("Could not borrow vault pub sig reference")
-            
-        let amountArg = OnChainMultiSig.PayloadArg(t: Type<UFix64>(), v: amount);
-        let toAddrArg = OnChainMultiSig.PayloadArg(t: Type<Address>(), v: toAddr);
-        let p = OnChainMultiSig.PayloadDetails(method: method, args: [amountArg, toAddrArg]);
+        
+        let p = OnChainMultiSig.PayloadDetails(method: method, args: args);
         return pubSigRef.addNewPayload(payload: p, publicKey: publicKey, sig: sig.decodeHex()) 
     }
 }

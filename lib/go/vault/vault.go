@@ -65,47 +65,7 @@ func AccountSignerTransferTokens(
 	return
 }
 
-func MultiSig_NewPendingTransferPayload(
-	g *gwtf.GoWithTheFlow,
-	amount string,
-	to string,
-	signerAcct string,
-	vaultAcct string,
-) (events []*gwtf.FormatedEvent, err error) {
-	txFilename := "../../../transactions/new_pending_transfer.cdc"
-	txScript := util.ParseCadenceTemplate(txFilename)
-
-	method := "transfer"
-	ufix64, err := cadence.NewUFix64(amount)
-	if err != nil {
-		return nil, err
-	}
-	toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
-	signable, err := util.GetSignableDataFromScript(g, method, ufix64, toAddr)
-	if err != nil {
-		return
-	}
-
-	sig, err := util.SignPayloadOffline(g, signable, signerAcct)
-	if err != nil {
-		return
-	}
-
-	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
-	e, err := g.TransactionFromFile(txFilename, txScript).
-		SignProposeAndPayAs(signerAcct).
-		StringArgument(signerPubKey[2:]).
-		StringArgument(sig).
-		AccountArgument(vaultAcct).
-		StringArgument(method).
-		UFix64Argument(amount).
-		AccountArgument(to).
-		Run()
-	events = util.ParseTestEvents(e)
-	return
-}
-
-func MultiSig_NewPayloadSignature(
+func MultiSig_Transfer(
 	g *gwtf.GoWithTheFlow,
 	amount string,
 	to string,
@@ -113,6 +73,7 @@ func MultiSig_NewPayloadSignature(
 	signerAcct string,
 	vaultAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
+
 	method := "transfer"
 	ufix64, err := cadence.NewUFix64(amount)
 	if err != nil {
@@ -128,8 +89,12 @@ func MultiSig_NewPayloadSignature(
 	if err != nil {
 		return
 	}
-
-	return util.MultiSigVault_NewPayloadSignature(g, txIndex, sig, signerAcct, vaultAcct)
+	if txIndex != 0 {
+		return util.MultiSig_VaultAddPayloadSignature(g, txIndex, sig, signerAcct, vaultAcct)
+	} else {
+		args := []cadence.Value{ufix64, toAddr}
+		return util.MultiSig_VaultNewPayload(g, sig, method, args, signerAcct, vaultAcct)
+	}
 }
 
 func MultiSig_VaultExecuteTx(

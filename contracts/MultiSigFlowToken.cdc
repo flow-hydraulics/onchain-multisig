@@ -80,20 +80,20 @@ pub contract MultiSigFlowToken: FungibleToken {
             let p = manager.readyForExecution(txIndex: txIndex) ?? panic ("TX not ready for execution")
             switch p.method {
                 case "configureKey":
-                    let pubKey = p.args[0].value as? String ?? panic ("cannot downcast public key");
-                    let weight = p.args[1].value as? UFix64 ?? panic ("cannot downcast weight");
+                    let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");
+                    let weight = p.args[1] as? UFix64 ?? panic ("cannot downcast weight");
                     let newSignatureStore = manager.configureKeys(pks: [pubKey], kws: [weight])
                     self.signatureStore = newSignatureStore; 
                 case "removeKey":
-                    let pubKey = p.args[0].value as? String ?? panic ("cannot downcast public key");
+                    let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");
                     let newSignatureStore = manager.removeKeys(pks: [pubKey])
                     self.signatureStore = newSignatureStore; 
                 case "withdraw":
-                    let amount  = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
+                    let amount  = p.args[0] as? UFix64 ?? panic ("cannot downcast amount");
                     return <- self.withdraw(amount: amount);
                 case "transfer":
-                    let amount = p.args[0].value as? UFix64 ?? panic ("cannot downcast amount");
-                    let to = p.args[1].value as? Address ?? panic ("cannot downcast address");
+                    let amount = p.args[0] as? UFix64 ?? panic ("cannot downcast amount");
+                    let to = p.args[1] as? Address ?? panic ("cannot downcast address");
                     let toAcct = getAccount(to);
                     let receiver = toAcct.getCapability(MultiSigFlowToken.VaultReceiverPubPath)!
                         .borrow<&{FungibleToken.Receiver}>()

@@ -47,7 +47,7 @@ func TestAddNewPendingTransferPayloadWithFullMultiSigAccount(t *testing.T) {
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	events, err := MultiSig_NewPendingTransferPayload(g, transferAmount, transferTo, Acct1000, vaultAcct)
+	events, err := MultiSig_Transfer(g, transferAmount, transferTo, 0, Acct1000, vaultAcct)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -73,7 +73,7 @@ func TestAddNewPendingTransferPayloadUnknowAcct(t *testing.T) {
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_NewPendingTransferPayload(g, transferAmount, "owner", "non-registered-account", vaultAcct)
+	_, err = MultiSig_Transfer(g, transferAmount, "owner", 0, "non-registered-account", vaultAcct)
 	assert.Error(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -114,7 +114,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_NewPendingTransferPayload(g, transferAmount, transferTo, Acct500_1, vaultAcct)
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, 0, Acct500_1, vaultAcct)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -124,7 +124,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// Add another signature; total weight now is 500 + 250
 	//
-	events, err := MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, Acct250_1, vaultAcct)
+	events, err := MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct250_1, vaultAcct)
 	assert.NoError(t, err)
 
 	uuid, err := util.GetVaultUUID(g, vaultAcct)
@@ -141,7 +141,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// Add another signature; total weight now is 500 + 250 + 500
 	//
-	_, err = MultiSig_NewPayloadSignature(g, transferAmount, transferTo, postTxIndex, Acct500_2, vaultAcct)
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct500_2, vaultAcct)
 	assert.NoError(t, err)
 
 	initFromBalance, err := util.GetBalance(g, "vaulted-account")

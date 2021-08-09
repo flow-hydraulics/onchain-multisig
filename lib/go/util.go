@@ -229,7 +229,31 @@ func GetSignableDataFromScript(
 	return
 }
 
-func MultiSigVault_NewPayloadSignature(
+func MultiSig_VaultNewPayload(
+	g *gwtf.GoWithTheFlow,
+	sig string,
+	method string,
+	args []cadence.Value,
+	signerAcct string,
+	resourceAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/add_new_payload.cdc"
+	txScript := ParseCadenceTemplate(txFilename)
+
+	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(signerAcct).
+		AccountArgument(resourceAcct).
+		StringArgument(signerPubKey[2:]).
+		StringArgument(sig).
+		StringArgument(method).
+		Argument(cadence.NewArray(args)).
+		Run()
+	events = ParseTestEvents(e)
+	return
+}
+
+func MultiSig_VaultAddPayloadSignature(
 	g *gwtf.GoWithTheFlow,
 	txIndex uint64,
 	sig string,
