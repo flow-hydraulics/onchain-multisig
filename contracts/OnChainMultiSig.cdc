@@ -6,14 +6,25 @@ pub contract OnChainMultiSig {
     pub event NewPayloadSigAdded(resourceId: UInt64, txIndex: UInt64);
 
     pub struct PayloadDetails {
+        pub var txIndex: UInt64;
         pub var method: String;
         pub var args: [AnyStruct];
         
-        init(method: String, args: [AnyStruct]) {
+        init(txIndex: UInt64, method: String, args: [AnyStruct]) {
+            self.txIndex = txIndex;
             self.method = method;
             self.args = args;
         }
-
+    }
+    
+    pub struct ExecutionDetails {
+        pub var payload: OnChainMultiSig.PayloadDetails;
+        pub var signatureStore: OnChainMultiSig.SignatureStore;
+        
+        init(payload: OnChainMultiSig.PayloadDetails, signatureStore: OnChainMultiSig.SignatureStore) {
+            self.payload = payload
+            self.signatureStore = signatureStore
+        }
     }
 
     pub struct PubKeyAttr{
@@ -50,7 +61,7 @@ pub contract OnChainMultiSig {
         pub fun getSignableData(payload: PayloadDetails): [UInt8];
         pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, publicKey: String, sig: [UInt8]): SignatureStore;
         pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, publicKey: String, sig: [UInt8]): SignatureStore;
-        pub fun readyForExecution(txIndex: UInt64): PayloadDetails?;
+        pub fun readyForExecution(txIndex: UInt64): ExecutionDetails?;
     }
 
     pub struct SignatureStore {
@@ -87,7 +98,8 @@ pub contract OnChainMultiSig {
         pub var signatureStore: SignatureStore;
 
         pub fun getSignableData(payload: PayloadDetails): [UInt8] {
-            var s = payload.method.utf8;
+            var s = payload.txIndex.toBigEndianBytes();
+            s = s.concat(payload.method.utf8);
             for a in payload.args {
                 var b: [UInt8] = [];
                 switch a.getType() {
@@ -133,6 +145,11 @@ pub contract OnChainMultiSig {
         pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, publicKey: String, sig: [UInt8]): SignatureStore {
             assert(self.signatureStore.keyList.containsKey(publicKey), message: "Public key is not a registered signer");
 
+            let txIndex = self.signatureStore.txIndex + UInt64(1);
+            assert(payload.txIndex == txIndex, message: "Incorrect txIndex provided in paylaod")
+            assert(!self.signatureStore.payloads.containsKey(txIndex), message: "Payload index already exist");
+            self.signatureStore.txIndex = txIndex;
+
             // The keyIndex is also 0 for the first key
             let keyListSig = [Crypto.KeyListSignature(keyIndex: 0, signature: sig)]
 
@@ -141,10 +158,6 @@ pub contract OnChainMultiSig {
             if ( approvalWeight == nil) {
                 panic ("invalid signer")
             }
-
-            let txIndex = self.signatureStore.txIndex.saturatingAdd(1);
-            self.signatureStore.txIndex = txIndex;
-            assert(!self.signatureStore.payloads.containsKey(txIndex), message: "Payload index already exist");
 
             self.signatureStore.payloads.insert(key: txIndex, payload);
 
@@ -185,7 +198,7 @@ pub contract OnChainMultiSig {
             return self.signatureStore
         }
 
-        pub fun readyForExecution(txIndex: UInt64): PayloadDetails? {
+        pub fun readyForExecution(txIndex: UInt64): ExecutionDetails? {
             assert(self.signatureStore.payloads.containsKey(txIndex), message: "No payload for such index");
             let pks = self.signatureStore.payloadSigs[txIndex]!.pubKeys;
             let sigs = self.signatureStore.payloadSigs[txIndex]!.keyListSignatures;
@@ -196,9 +209,9 @@ pub contract OnChainMultiSig {
             if (approvalWeight! >= 1000.0) {
                 self.signatureStore.payloadSigs.remove(key: txIndex)!;
                 let pd = self.signatureStore.payloads.remove(key: txIndex)!;
-                return pd;
+                return ExecutionDetails(payload: pd, signatureStore: self.signatureStore);
             } else {
-                return nil;
+                return nil
             }
         }
         

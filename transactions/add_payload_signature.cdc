@@ -3,7 +3,7 @@
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 
-transaction (txIndex: UInt64, publicKey: String, sig: String, addr: Address) {
+transaction (sig: String, txIndex: UInt64, publicKey: String, addr: Address) {
     prepare(oneOfMultiSig: AuthAccount) {
     }
 

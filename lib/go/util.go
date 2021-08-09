@@ -209,13 +209,22 @@ func SignPayloadOffline(g *gwtf.GoWithTheFlow, message []byte, signingAcct strin
 
 func GetSignableDataFromScript(
 	g *gwtf.GoWithTheFlow,
+	txIndex uint64,
 	method string,
 	args ...cadence.Value,
 ) (signable []byte, err error) {
 	filename := "../../../scripts/calc_signable_data.cdc"
 	script := ParseCadenceTemplate(filename)
 
+	ctxIndex, err := g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.UInt64(txIndex))).RunReturns()
+	if err != nil {
+		return
+	}
+	signable = append(signable, ConvertCadenceByteArray(ctxIndex)...)
 	cMethod, err := g.ScriptFromFile(filename, script).Argument(cadence.NewOptional(cadence.String(method))).RunReturns()
+	if err != nil {
+		return
+	}
 	signable = append(signable, ConvertCadenceByteArray(cMethod)...)
 
 	for _, arg := range args {
@@ -232,6 +241,7 @@ func GetSignableDataFromScript(
 func MultiSig_VaultNewPayload(
 	g *gwtf.GoWithTheFlow,
 	sig string,
+	txIndex uint64,
 	method string,
 	args []cadence.Value,
 	signerAcct string,
@@ -243,11 +253,12 @@ func MultiSig_VaultNewPayload(
 	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
-		AccountArgument(resourceAcct).
-		StringArgument(signerPubKey[2:]).
 		StringArgument(sig).
+		UInt64Argument(txIndex).
 		StringArgument(method).
 		Argument(cadence.NewArray(args)).
+		StringArgument(signerPubKey[2:]).
+		AccountArgument(resourceAcct).
 		Run()
 	events = ParseTestEvents(e)
 	return
@@ -255,8 +266,8 @@ func MultiSig_VaultNewPayload(
 
 func MultiSig_VaultAddPayloadSignature(
 	g *gwtf.GoWithTheFlow,
-	txIndex uint64,
 	sig string,
+	txIndex uint64,
 	signerAcct string,
 	resourceAcct string,
 ) (events []*gwtf.FormatedEvent, err error) {
@@ -266,9 +277,9 @@ func MultiSig_VaultAddPayloadSignature(
 	signerPubKey := g.Accounts[signerAcct].PrivateKey.PublicKey().String()
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(signerAcct).
+		StringArgument(sig).
 		UInt64Argument(txIndex).
 		StringArgument(signerPubKey[2:]).
-		StringArgument(sig).
 		AccountArgument(resourceAcct).
 		Run()
 	events = ParseTestEvents(e)

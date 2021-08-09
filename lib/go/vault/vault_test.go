@@ -41,13 +41,12 @@ func TestAddNewPendingTransferPayloadWithFullMultiSigAccount(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.5"
 	transferTo := "owner"
-
 	vaultAcct := "vaulted-account"
 
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	events, err := MultiSig_Transfer(g, transferAmount, transferTo, 0, Acct1000, vaultAcct)
+	events, err := MultiSig_Transfer(g, transferAmount, transferTo, initTxIndex+uint64(1), Acct1000, vaultAcct, true)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -68,12 +67,13 @@ func TestAddNewPendingTransferPayloadWithFullMultiSigAccount(t *testing.T) {
 func TestAddNewPendingTransferPayloadUnknowAcct(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.5000000"
+	transferTo := "owner"
 	vaultAcct := "vaulted-account"
 
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_Transfer(g, transferAmount, "owner", 0, "non-registered-account", vaultAcct)
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, initTxIndex+uint64(1), "non-registered-account", vaultAcct, true)
 	assert.Error(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -81,23 +81,28 @@ func TestAddNewPendingTransferPayloadUnknowAcct(t *testing.T) {
 	assert.Equal(t, uint64(0), postTxIndex-initTxIndex)
 }
 
-func TestExecutePendingTransnferFromFullAcct(t *testing.T) {
+func TestExecutePendingTransnferFromFullAcctOnlyOnce(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.50000000"
 	payerAcct := "owner"
 	vaultAcct := "vaulted-account"
-	txIndex := uint64(1)
 
 	initFromBalance, err := util.GetBalance(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_VaultExecuteTx(g, txIndex, payerAcct, vaultAcct)
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_VaultExecuteTx(g, initTxIndex, payerAcct, vaultAcct)
 	assert.NoError(t, err)
 
 	postFromBalance, err := util.GetBalance(g, vaultAcct)
 	assert.NoError(t, err)
 
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
+
+	_, err = MultiSig_VaultExecuteTx(g, initTxIndex, payerAcct, vaultAcct)
+	assert.Error(t, err)
 }
 
 func TestExecutePayloadWithMultipleSig(t *testing.T) {
@@ -114,7 +119,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_Transfer(g, transferAmount, transferTo, 0, Acct500_1, vaultAcct)
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, initTxIndex+uint64(1), Acct500_1, vaultAcct, true)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -124,7 +129,7 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// Add another signature; total weight now is 500 + 250
 	//
-	events, err := MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct250_1, vaultAcct)
+	events, err := MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct250_1, vaultAcct, false)
 	assert.NoError(t, err)
 
 	uuid, err := util.GetVaultUUID(g, vaultAcct)
@@ -141,16 +146,16 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	//
 	// Add another signature; total weight now is 500 + 250 + 500
 	//
-	_, err = MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct500_2, vaultAcct)
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct500_2, vaultAcct, false)
 	assert.NoError(t, err)
 
-	initFromBalance, err := util.GetBalance(g, "vaulted-account")
+	initFromBalance, err := util.GetBalance(g, vaultAcct)
 	assert.NoError(t, err)
 
 	_, err = MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct, vaultAcct)
 	assert.NoError(t, err)
 
-	postFromBalance, err := util.GetBalance(g, "vaulted-account")
+	postFromBalance, err := util.GetBalance(g, vaultAcct)
 	assert.NoError(t, err)
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
 }

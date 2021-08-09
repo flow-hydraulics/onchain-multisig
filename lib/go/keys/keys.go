@@ -24,10 +24,11 @@ func MultiSig_RemoveKey(
 	txIndex uint64,
 	signerAcct string,
 	vaultAcct string,
+	newPayload bool,
 ) (events []*gwtf.FormatedEvent, err error) {
 	method := "removeKey"
 	pkToRemove := cadence.NewString(g.Accounts[acctToRemove].PrivateKey.PublicKey().String()[2:])
-	signable, err := util.GetSignableDataFromScript(g, method, pkToRemove)
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, pkToRemove)
 	if err != nil {
 		return
 	}
@@ -37,11 +38,11 @@ func MultiSig_RemoveKey(
 		return
 	}
 
-	if txIndex != 0 {
-		return util.MultiSig_VaultAddPayloadSignature(g, txIndex, sig, signerAcct, vaultAcct)
-	} else {
+	if newPayload {
 		args := []cadence.Value{pkToRemove}
-		return util.MultiSig_VaultNewPayload(g, sig, method, args, signerAcct, vaultAcct)
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct)
+	} else {
+		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
 	}
 }
 
@@ -52,6 +53,7 @@ func MultiSig_ConfigKey(
 	txIndex uint64,
 	signerAcct string,
 	vaultAcct string,
+	newPayload bool,
 ) (events []*gwtf.FormatedEvent, err error) {
 
 	method := "configureKey"
@@ -61,7 +63,7 @@ func MultiSig_ConfigKey(
 	if err != nil {
 		return
 	}
-	signable, err := util.GetSignableDataFromScript(g, method, pkToConfig, weightToConfig)
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, pkToConfig, weightToConfig)
 	if err != nil {
 		return
 	}
@@ -71,10 +73,10 @@ func MultiSig_ConfigKey(
 		return
 	}
 
-	if txIndex != 0 {
-		return util.MultiSig_VaultAddPayloadSignature(g, txIndex, sig, signerAcct, vaultAcct)
-	} else {
+	if newPayload {
 		args := []cadence.Value{pkToConfig, weightToConfig}
-		return util.MultiSig_VaultNewPayload(g, sig, method, args, signerAcct, vaultAcct)
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct)
+	} else {
+		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
 	}
 }

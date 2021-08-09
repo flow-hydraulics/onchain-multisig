@@ -77,7 +77,9 @@ pub contract MultiSigFlowToken: FungibleToken {
         /// To execute the multisig transaction iff conditions are met
         pub fun executeTx(txIndex: UInt64): @AnyResource? {
             let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let p = manager.readyForExecution(txIndex: txIndex) ?? panic ("TX not ready for execution")
+            let exeDetails = manager.readyForExecution(txIndex: txIndex) ?? panic ("no transactable payload at given txIndex")
+            let p = exeDetails.payload            
+            self.signatureStore = exeDetails.signatureStore
             switch p.method {
                 case "configureKey":
                     let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");

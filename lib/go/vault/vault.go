@@ -72,6 +72,7 @@ func MultiSig_Transfer(
 	txIndex uint64,
 	signerAcct string,
 	vaultAcct string,
+	newPaylaod bool,
 ) (events []*gwtf.FormatedEvent, err error) {
 
 	method := "transfer"
@@ -80,7 +81,7 @@ func MultiSig_Transfer(
 		return nil, err
 	}
 	toAddr := cadence.BytesToAddress(g.Accounts[to].Address.Bytes())
-	signable, err := util.GetSignableDataFromScript(g, method, ufix64, toAddr)
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, ufix64, toAddr)
 	if err != nil {
 		return
 	}
@@ -89,11 +90,11 @@ func MultiSig_Transfer(
 	if err != nil {
 		return
 	}
-	if txIndex != 0 {
-		return util.MultiSig_VaultAddPayloadSignature(g, txIndex, sig, signerAcct, vaultAcct)
-	} else {
+	if newPaylaod {
 		args := []cadence.Value{ufix64, toAddr}
-		return util.MultiSig_VaultNewPayload(g, sig, method, args, signerAcct, vaultAcct)
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct)
+	} else {
+		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
 	}
 }
 

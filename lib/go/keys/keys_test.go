@@ -20,7 +20,10 @@ func TestAddNewPendingKeyRemoval(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, hasKey, true)
 
-	_, err = MultiSig_RemoveKey(g, vault.Acct500_1, 0, vault.Acct1000, vaultAcct)
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_RemoveKey(g, vault.Acct500_1, initTxIndex+uint64(1), vault.Acct1000, vaultAcct, true)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
@@ -40,7 +43,10 @@ func TestRemovedKeyCannotAddSig(t *testing.T) {
 	vaultAcct := "vaulted-account"
 	removedAcct := vault.Acct500_1
 
-	_, err := MultiSig_RemoveKey(g, removedAcct, 1, removedAcct, vaultAcct)
+	txIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_RemoveKey(g, removedAcct, txIndex, removedAcct, vaultAcct, false)
 	assert.Error(t, err)
 }
 
@@ -52,7 +58,10 @@ func TestAddNewPendingKeyConfig(t *testing.T) {
 	newAcct := vault.Acct500_1
 	newAcctWeight := "100.00000000"
 
-	_, err := MultiSig_ConfigKey(g, newAcct, newAcctWeight, 0, vault.Acct1000, vaultAcct)
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_ConfigKey(g, newAcct, newAcctWeight, initTxIndex+uint64(1), vault.Acct1000, vaultAcct, true)
 	assert.NoError(t, err)
 
 	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
