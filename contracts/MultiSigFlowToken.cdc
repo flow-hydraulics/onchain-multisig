@@ -23,7 +23,12 @@ pub contract MultiSigFlowToken: FungibleToken {
 
     // Vault
     //
-    pub resource Vault: FungibleToken.Provider, FungibleToken.Receiver, FungibleToken.Balance, OnChainMultiSig.PublicSigner {
+    pub resource Vault: 
+        FungibleToken.Provider, 
+        FungibleToken.Receiver, 
+        FungibleToken.Balance, 
+        OnChainMultiSig.PublicSigner, 
+        OnChainMultiSig.PrivateKeyManager {
 
         // holds the balance of a users tokens
         pub var balance: UFix64

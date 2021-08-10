@@ -48,13 +48,16 @@ pub contract OnChainMultiSig {
     }
 
     pub resource interface PublicSigner {
-        // the first [UInt8] in the signable data will be the method
-        // follow by the args if args are not resources
-        pub fun UUID(): UInt64; 
         pub var signatureStore: SignatureStore;
         pub fun addNewPayload(payload: PayloadDetails, publicKey: String, sig: [UInt8]);
         pub fun addPayloadSignature (txIndex: UInt64, publicKey: String, sig: [UInt8]);
         pub fun executeTx(txIndex: UInt64): @AnyResource?;
+        pub fun UUID(): UInt64; 
+    }
+    
+    pub resource interface PrivateKeyManager {
+        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]);
+        pub fun removeKeys( multiSigPubKeys: [String]);
     }
     
     pub struct interface SignatureManager {
@@ -62,6 +65,9 @@ pub contract OnChainMultiSig {
         pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, publicKey: String, sig: [UInt8]): SignatureStore;
         pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, publicKey: String, sig: [UInt8]): SignatureStore;
         pub fun readyForExecution(txIndex: UInt64): ExecutionDetails?;
+        pub fun configureKeys (pks: [String], kws: [UFix64]): SignatureStore;
+        pub fun removeKeys (pks: [String]): SignatureStore;
+        pub fun verifySigners (payload: PayloadDetails?, txIndex: UInt64?, pks: [String], sigs: [Crypto.KeyListSignature]): UFix64?;
     }
 
     pub struct SignatureStore {
