@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddNewPendingKeyRemoval(t *testing.T) {
+func TestAddAndExecuteKeyRemoval(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 
 	vaultAcct := "vaulted-account"
@@ -50,13 +50,38 @@ func TestRemovedKeyCannotAddSig(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestAddNewPendingKeyConfig(t *testing.T) {
+func TestAddAndExecuteKeyConfig(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 
 	vaultAcct := "vaulted-account"
 	payerAcct := "owner"
-	newAcct := vault.Acct500_1
+	newAcct := vault.Acct500_2
 	newAcctWeight := "100.00000000"
+
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_ConfigKey(g, newAcct, newAcctWeight, initTxIndex+uint64(1), vault.Acct1000, vaultAcct, true)
+	assert.NoError(t, err)
+
+	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = vault.MultiSig_VaultExecuteTx(g, postTxIndex, payerAcct, vaultAcct)
+	assert.NoError(t, err)
+
+	weight, err := util.GetKeyWeight(g, vaultAcct, newAcct)
+	assert.NoError(t, err)
+	assert.Equal(t, newAcctWeight, weight.String())
+}
+
+func TestAddAndExecuteNewKeyConfig(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+
+	vaultAcct := "vaulted-account"
+	payerAcct := "owner"
+	newAcct := "non-registered-account"
+	newAcctWeight := "150.00000000"
 
 	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
