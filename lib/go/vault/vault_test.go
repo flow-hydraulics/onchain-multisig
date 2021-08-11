@@ -166,12 +166,10 @@ func TestPubUpdateTxIndex(t *testing.T) {
 	vaultAcct := "vaulted-account"
 
 	_, err := MultiSig_PubUpdateTxIndex(g, 11, ownerAcct, vaultAcct)
-	// error: cannot assign to unassignable expression
-	//     	            	  --> cc200f93812741ff8731fe90ba0685f70ca942c9bbd62318245e1c9c4ea9bfdd:17:8
-	//     	            	   |
-	//     	            	17 |         vaultRef.signatureStore!.txIndex = txIndex
-	//     	            	   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	assert.Error(t, err)
+	//
+	// This is too public
+	//
+	assert.NoError(t, err)
 }
 
 func TestPubUpdateStore(t *testing.T) {
@@ -194,11 +192,9 @@ func TestOwnerUpdateTxIndex(t *testing.T) {
 	vaultAcct := "vaulted-account"
 
 	_, err := MultiSig_OwnerUpdateTxIndex(g, 11, ownerAcct, vaultAcct)
-	// error: cannot assign to unassignable expression
-	//     	            	  --> cc200f93812741ff8731fe90ba0685f70ca942c9bbd62318245e1c9c4ea9bfdd:17:8
-	//     	            	   |
-	//     	            	17 |         vaultRef.signatureStore!.txIndex = txIndex
-	//     	            	   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	//
+	// This is too public
+	//
 	assert.Error(t, err)
 }
 

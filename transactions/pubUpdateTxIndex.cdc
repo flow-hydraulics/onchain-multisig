@@ -14,6 +14,6 @@ transaction (multiSigVaultAddr: Address, txIndex: UInt64) {
             .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
             ?? panic("Could not borrow vault pub sig reference")
             
-        vaultRef.signatureStore!.txIndex = txIndex
+        vaultRef.signatureStore.txIndex = txIndex
     }
 }
