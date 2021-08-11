@@ -1,4 +1,4 @@
-// This transactions deploys the FiatToken contract
+// This transactions deploys the MultiSigFlowToken contract
 //
 // Owner of the contract has exclusive functions
 // We only provide the AuthAccount holder the owner resource

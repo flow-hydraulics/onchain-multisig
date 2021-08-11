@@ -1,4 +1,4 @@
-// This script reads the balance field of an account's Balance
+// This script gets all the  stored public keys in a multiSigManager for a resource 
 
 import FungibleToken from 0x{{.FungibleToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
@@ -10,5 +10,5 @@ pub fun main(account: Address): [String] {
         .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
         ?? panic("Could not borrow Pub Signer reference to the Vault")
 
-    return vaultRef.signatureStore!.keyList.keys
+    return vaultRef.getSignerKeys()
 }

@@ -1,5 +1,4 @@
-// This script reads the total supply field
-// of the FiatToken smart contract
+// This script reads the total supply field of the MultiSigFlowToken smart contract
 
 import FiatToken from 0x{{.FiatToken}}
 

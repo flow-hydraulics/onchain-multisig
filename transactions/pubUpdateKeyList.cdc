@@ -1,9 +1,9 @@
-// This tx attempts to update the multiSigManager.txIndex resource directly by a public account 
+// This tx attempts to directly modify keyList in a multiSigManager by a public account 
 
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 
-transaction (multiSigVaultAddr: Address, txIndex: UInt64) {
+transaction (multiSigVaultAddr: Address) {
     prepare(payer: AuthAccount) {
     }
 
@@ -15,6 +15,6 @@ transaction (multiSigVaultAddr: Address, txIndex: UInt64) {
             .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
             ?? panic("Could not borrow vault pub sig reference")
             
-        vaultRef.multiSigManager.txIndex = txIndex 
+        vaultRef.multiSigManager.configureKeys(pks: ["1234"], kws: [0.2])
     }
 }

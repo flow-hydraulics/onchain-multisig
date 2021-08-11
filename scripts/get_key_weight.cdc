@@ -1,4 +1,4 @@
-// This script reads the balance field of an account's Balance
+// This script gets the weight of a stored public key in a multiSigManager for a resource 
 
 import FungibleToken from 0x{{.FungibleToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
@@ -10,6 +10,6 @@ pub fun main(account: Address, key: String): UFix64 {
         .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
         ?? panic("Could not borrow Pub Signer reference to the Vault")
 
-    let attr = vaultRef.signatureStore!.keyList[key]!
+    let attr = vaultRef.getSignerKeyAttr(publicKey: key)!
     return attr.weight
 }

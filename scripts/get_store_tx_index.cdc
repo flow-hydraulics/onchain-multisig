@@ -1,4 +1,5 @@
-// This script reads the balance field of an account's FiatToken Balance
+// This script gets the current TxIndex for payloads stored in multiSigManager in a resource 
+// The new payload must be this value + 1
 
 import FungibleToken from 0x{{.FungibleToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
@@ -10,5 +11,5 @@ pub fun main(account: Address): UInt64{
         .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
         ?? panic("Could not borrow Pub Signer reference to the Vault")
 
-    return vaultRef.signatureStore!.txIndex
+    return vaultRef.getTxIndex()
 }

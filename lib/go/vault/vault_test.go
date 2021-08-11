@@ -160,54 +160,106 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
 }
 
-func TestPubUpdateTxIndex(t *testing.T) {
+func TestPubCannotUpdateStore(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
-	ownerAcct := "vaulted-account"
+	pubAcct := "w-1000"
 	vaultAcct := "vaulted-account"
 
-	_, err := MultiSig_PubUpdateTxIndex(g, 11, ownerAcct, vaultAcct)
+	_, err := MultiSig_PubUpdateStore(g, 11, pubAcct, vaultAcct)
+	// error: cannot assign to `multiSigManager`: field has public access
+	//  --> 237d2b40b5f6a90dd9ee3aa5c06af26c30a241eab3c75686cc72c5d198aca78f:8:10
+	//   |
+	// 8 |         s.multiSigManager <-> store
+	//   |           ^^^^^^^^^^^^^^^ consider making it publicly settable with `pub(set)`
 	//
-	// This is too public
-	//
-	assert.NoError(t, err)
+	// error: cannot assign to constant member: `multiSigManager`
+	//  --> 237d2b40b5f6a90dd9ee3aa5c06af26c30a241eab3c75686cc72c5d198aca78f:8:10
+	//   |
+	// 8 |         s.multiSigManager <-> store
+	//   |           ^^^^^^^^^^^^^^^
+	assert.Error(t, err)
 }
-
-func TestPubUpdateStore(t *testing.T) {
+func TestOwnerCannotUpdateStore(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	ownerAcct := "vaulted-account"
 	vaultAcct := "vaulted-account"
 
 	_, err := MultiSig_PubUpdateStore(g, 11, ownerAcct, vaultAcct)
-	// error: cannot assign to `signatureStore`: field has public access
-	// --> f59dda20ccec82c40041048f66b938be0de7e3c8740f87f432ff979d42100c7b:19:17
-	//  |
-	//  |         vaultRef.signatureStore = store
-	//  |                  ^^^^^^^^^^^^^^ consider making it publicly settable with `pub(set)`
+	// error: cannot assign to `multiSigManager`: field has public access
+	//  --> 237d2b40b5f6a90dd9ee3aa5c06af26c30a241eab3c75686cc72c5d198aca78f:8:10
+	//   |
+	// 8 |         s.multiSigManager <-> store
+	//   |           ^^^^^^^^^^^^^^^ consider making it publicly settable with `pub(set)`
+	//
+	// error: cannot assign to constant member: `multiSigManager`
+	//  --> 237d2b40b5f6a90dd9ee3aa5c06af26c30a241eab3c75686cc72c5d198aca78f:8:10
+	//   |
+	// 8 |         s.multiSigManager <-> store
+	//   |           ^^^^^^^^^^^^^^^
 	assert.Error(t, err)
 }
 
-func TestOwnerUpdateTxIndex(t *testing.T) {
+func TestPubCannotUpdateTxIndex(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	pubAcct := "w-1000"
+	vaultAcct := "vaulted-account"
+
+	_, err := MultiSig_PubUpdateTxIndex(g, 11, pubAcct, vaultAcct)
+	// error: cannot assign to `txIndex`: field has public access
+	//     	            	  --> 1f805903cd707281105ae12e6dc76e889b70a1fda5dd9a13dbbf707a920fe561:17:33
+	//     	            	   |
+	//     	            	17 |         vaultRef.multiSigManager.txIndex = txIndex
+	//     	            	   |                                  ^^^^^^^ consider making it publicly settable with `pub(set)`
+	assert.Error(t, err)
+}
+
+func TestOwnerCannotUpdateTxIndex(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	ownerAcct := "vaulted-account"
 	vaultAcct := "vaulted-account"
 
 	_, err := MultiSig_OwnerUpdateTxIndex(g, 11, ownerAcct, vaultAcct)
-	//
-	// This is too public
-	//
+	// error: cannot assign to `txIndex`: field has public access
+	//     	            	  --> 1f805903cd707281105ae12e6dc76e889b70a1fda5dd9a13dbbf707a920fe561:17:33
+	//     	            	   |
+	//     	            	17 |         vaultRef.multiSigManager.txIndex = txIndex
+	//     	            	   |                                  ^^^^^^^ consider making it publicly settable with `pub(set)`
 	assert.Error(t, err)
 }
 
-func TestOwnerUpdateStore(t *testing.T) {
+func TestPubCannotUpdateKeyList(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	pubAcct := "w-1000"
+	vaultAcct := "vaulted-account"
+
+	_, err := MultiSig_PubUpdateKeyList(g, pubAcct, vaultAcct)
+	// error: cannot access `keyList`: field has private access
+	//  --> a0a443291841b0ef697e410b6587d13d010cc39ebba9a085562a03624fe27886:18:8
+	//  |
+	//18 |         vaultRef.multiSigManager.keyList.insert(key: "1aa4", pka)
+	//  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	assert.Error(t, err)
+	keys, err := util.GetStoreKeys(g, "vaulted-account")
+	assert.NoError(t, err)
+	assert.Len(t, keys, 5)
+}
+
+// Owner must use the `addKeys` function in the Vault
+func TestOwnerCannotUpdateKeyListDirectly(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	ownerAcct := "vaulted-account"
 	vaultAcct := "vaulted-account"
 
-	_, err := MultiSig_OwnerUpdateStore(g, 11, ownerAcct, vaultAcct)
-	// error: cannot assign to `signatureStore`: field has public access
-	//   --> 9d6495e2eb98d399c4581b879745414ecaaa17581ef1e657239f0e14afb9534f:19:17
-	//    |
-	// 19 |         vaultRef.signatureStore = store
-	//    |                  ^^^^^^^^^^^^^^ consider making it publicly settable with `pub(set)`
+	_, err := MultiSig_OwnerUpdateKeyList(g, ownerAcct, vaultAcct)
+
+	//	error: cannot access `keyList`: field has private access
+	// --> a317001f16f9907ec9a948bf62b70db9469d10eb7f3d0598de982e8e8f73a60d:8:8
+	//  |
+	//8 |         s.multiSigManager.keyList.insert(key: "1234", pka)
+	//  |         ^^^^^^^^^^^^^^^^^^^^^^^^^
 	assert.Error(t, err)
+
+	keys, err := util.GetStoreKeys(g, "vaulted-account")
+	assert.NoError(t, err)
+	assert.Len(t, keys, 5)
 }

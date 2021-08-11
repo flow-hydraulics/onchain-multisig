@@ -1,4 +1,5 @@
-// Masterminter uses this to configure which minter the minter controller manages
+// Attempt to execute a transaction with signatures for a txIndex stored in a multiSigManager for a resource 
+
 
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}

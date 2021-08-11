@@ -116,6 +116,22 @@ func MultiSig_VaultExecuteTx(
 	return
 }
 
+func MultiSig_PubUpdateKeyList(
+	g *gwtf.GoWithTheFlow,
+	payerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/pubUpdateKeyList.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument(vaultAcct).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
+
 func MultiSig_PubUpdateTxIndex(
 	g *gwtf.GoWithTheFlow,
 	index uint64,
@@ -147,6 +163,22 @@ func MultiSig_PubUpdateStore(
 		SignProposeAndPayAs(payerAcct).
 		AccountArgument(vaultAcct).
 		UInt64Argument(index).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
+
+func MultiSig_OwnerUpdateKeyList(
+	g *gwtf.GoWithTheFlow,
+	payerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/ownerUpdateKeyList.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument(vaultAcct).
 		Run()
 	events = util.ParseTestEvents(e)
 	return
