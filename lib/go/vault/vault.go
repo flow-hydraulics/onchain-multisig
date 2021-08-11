@@ -151,3 +151,39 @@ func MultiSig_PubUpdateStore(
 	events = util.ParseTestEvents(e)
 	return
 }
+
+func MultiSig_OwnerUpdateTxIndex(
+	g *gwtf.GoWithTheFlow,
+	index uint64,
+	payerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/ownerUpdateTxIndex.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument(vaultAcct).
+		UInt64Argument(index).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
+
+func MultiSig_OwnerUpdateStore(
+	g *gwtf.GoWithTheFlow,
+	index uint64,
+	payerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/ownerUpdateStore.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument(vaultAcct).
+		UInt64Argument(index).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}

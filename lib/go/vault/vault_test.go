@@ -187,3 +187,31 @@ func TestPubUpdateStore(t *testing.T) {
 	//  |                  ^^^^^^^^^^^^^^ consider making it publicly settable with `pub(set)`
 	assert.Error(t, err)
 }
+
+func TestOwnerUpdateTxIndex(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	ownerAcct := "vaulted-account"
+	vaultAcct := "vaulted-account"
+
+	_, err := MultiSig_OwnerUpdateTxIndex(g, 11, ownerAcct, vaultAcct)
+	// error: cannot assign to unassignable expression
+	//     	            	  --> cc200f93812741ff8731fe90ba0685f70ca942c9bbd62318245e1c9c4ea9bfdd:17:8
+	//     	            	   |
+	//     	            	17 |         vaultRef.signatureStore!.txIndex = txIndex
+	//     	            	   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	assert.Error(t, err)
+}
+
+func TestOwnerUpdateStore(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	ownerAcct := "vaulted-account"
+	vaultAcct := "vaulted-account"
+
+	_, err := MultiSig_OwnerUpdateStore(g, 11, ownerAcct, vaultAcct)
+	// error: cannot assign to `signatureStore`: field has public access
+	//   --> 9d6495e2eb98d399c4581b879745414ecaaa17581ef1e657239f0e14afb9534f:19:17
+	//    |
+	// 19 |         vaultRef.signatureStore = store
+	//    |                  ^^^^^^^^^^^^^^ consider making it publicly settable with `pub(set)`
+	assert.Error(t, err)
+}
