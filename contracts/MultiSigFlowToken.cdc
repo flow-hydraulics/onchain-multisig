@@ -62,18 +62,6 @@ pub contract MultiSigFlowToken: FungibleToken {
         // Limited to `access(self)` to avoid exposing all functions in `SignatureManager` interface to account owner(s)
         access(self) let multiSigManager: @OnChainMultiSig.Manager;
 
-        // `OnChainMultiSig.PublicSigner` interfaces for public usage: 
-        // 1. addNewPayload: add new transaction payload to the signature store waiting for others to sign
-        // 2. addPayloadSignature: add signature to store for existing paylaods by payload index
-        // 3. executeTx: attempt to execute the transaction at a given index after required signatures have been added
-        // 4. UUID: gets the uuid of this resource 
-        // 5. getTxIndex: gets the sequentially assigned current txIndex of multisig pending tx of this resource 
-        // 6. getSignerKeys: gets the list of public keys for the resource's multisig signers 
-        // 7. getSignerKeyAttr: gets the stored key attributes 
-        // Interfaces 1&2 use `OnChainMultiSig.Manager` struct for code implementation
-        // Interface 3 needs to be implemented specifically for each resource
-        // Interfaces 4-7 are useful information to interact with the multiSigManager 
-        
         /// To submit a new paylaod, i.e. starting a new tx requiring, potentially requiring more signatures
         pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, publicKey: String, sig: [UInt8]) {
             self.multiSigManager.addNewPayload(resourceId: self.uuid, payload: payload, publicKey: publicKey, sig: sig);
