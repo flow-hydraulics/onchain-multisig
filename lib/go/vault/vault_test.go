@@ -162,10 +162,10 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 
 func TestPubUpdateTxIndex(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
-	payerAcct := "owner"
+	ownerAcct := "vaulted-account"
 	vaultAcct := "vaulted-account"
 
-	_, err := MultiSig_PubUpdateTxIndex(g, 11, payerAcct, vaultAcct)
+	_, err := MultiSig_PubUpdateTxIndex(g, 11, ownerAcct, vaultAcct)
 	// error: cannot assign to unassignable expression
 	//     	            	  --> cc200f93812741ff8731fe90ba0685f70ca942c9bbd62318245e1c9c4ea9bfdd:17:8
 	//     	            	   |
@@ -176,10 +176,10 @@ func TestPubUpdateTxIndex(t *testing.T) {
 
 func TestPubUpdateStore(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
-	payerAcct := "owner"
+	ownerAcct := "vaulted-account"
 	vaultAcct := "vaulted-account"
 
-	_, err := MultiSig_PubUpdateStore(g, 11, payerAcct, vaultAcct)
+	_, err := MultiSig_PubUpdateStore(g, 11, ownerAcct, vaultAcct)
 	// error: cannot assign to `signatureStore`: field has public access
 	// --> f59dda20ccec82c40041048f66b938be0de7e3c8740f87f432ff979d42100c7b:19:17
 	//  |
