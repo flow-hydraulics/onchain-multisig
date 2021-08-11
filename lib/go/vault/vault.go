@@ -115,3 +115,39 @@ func MultiSig_VaultExecuteTx(
 	events = util.ParseTestEvents(e)
 	return
 }
+
+func MultiSig_PubUpdateTxIndex(
+	g *gwtf.GoWithTheFlow,
+	index uint64,
+	payerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/pubUpdateTxIndex.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument(vaultAcct).
+		UInt64Argument(index).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
+
+func MultiSig_PubUpdateStore(
+	g *gwtf.GoWithTheFlow,
+	index uint64,
+	payerAcct string,
+	vaultAcct string,
+) (events []*gwtf.FormatedEvent, err error) {
+	txFilename := "../../../transactions/pubUpdateStore.cdc"
+	txScript := util.ParseCadenceTemplate(txFilename)
+
+	e, err := g.TransactionFromFile(txFilename, txScript).
+		SignProposeAndPayAs(payerAcct).
+		AccountArgument(vaultAcct).
+		UInt64Argument(index).
+		Run()
+	events = util.ParseTestEvents(e)
+	return
+}
