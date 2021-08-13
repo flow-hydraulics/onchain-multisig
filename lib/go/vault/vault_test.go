@@ -160,6 +160,37 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
 }
 
+func TestSameAcctCannotAddMultipleSigPerTxIndex(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	transferAmount := "15.50000000"
+	transferTo := "owner"
+
+	//
+	// First add a payload; total authorised weight is 500
+	//
+	vaultAcct := "vaulted-account"
+
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, initTxIndex+uint64(1), Acct500_1, vaultAcct, true)
+	assert.NoError(t, err)
+
+	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), postTxIndex-initTxIndex)
+
+	//
+	// Add another signature; total weight now is 500 + 250
+	//
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct250_1, vaultAcct, false)
+	assert.NoError(t, err)
+
+	// Same account cannot add signature again
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, postTxIndex, Acct250_1, vaultAcct, false)
+	assert.Error(t, err)
+
+}
 func TestPubCannotUpdateStore(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	pubAcct := "w-1000"
