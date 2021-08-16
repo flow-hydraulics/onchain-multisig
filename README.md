@@ -1,3 +1,5 @@
+<!-- markdownlint-configure-file { "MD013": { "line_length": 120 } } -->
+
 # OnChainMultiSig
 
 This repository is the source code for the `OnChainMultiSig` contract.
@@ -63,9 +65,10 @@ functions on the multisig supported resources to work with the `Manager`.
 #### Usage
 
 We will use a simple `Vault` resource in the `MultiSigFlowToken` contract to demonstrate the usage of the `PublicSigner`,
-how to form a [onchain-multisig signature], transacting with the `MultiSigFlowToken` contract and [resource owner account management].
+how to form a [onchain-multisig signature],
+transacting with the `MultiSigFlowToken` contract and [resource owner account management].
 
-**TODO code walk through**
+TODO code walk through
 
 ### Signatures
 
@@ -99,4 +102,3 @@ This limits the flexibility of the account but it may be neccessary, similar to 
 [`Weighted Keys`]: <https://docs.onflow.org/concepts/accounts-and-keys/#weighted-keys>
 [resource owner account management]: (#resource-owner-account-management)
 [^1]: Please see [resource owner account management] for details
-

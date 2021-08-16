@@ -25,9 +25,9 @@ func main() {
 		"w-250-2",
 		"non-registered-account",
 	)
-    // The "owner" defined in flow.json is the owner of the contracts:
-    // - `MultiSigFlowToken`
-    // - `OnChainMultiSig` 
+	// The "owner" defined in flow.json is the owner of the contracts:
+	// - `MultiSigFlowToken`
+	// - `OnChainMultiSig`
 	e, err := g.TransactionFromFile(txFilename, code).
 		SignProposeAndPayAs("owner").
 		StringArgument("MultiSigFlowToken").

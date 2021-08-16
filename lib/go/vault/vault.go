@@ -115,4 +115,3 @@ func MultiSig_VaultExecuteTx(
 	events = util.ParseTestEvents(e)
 	return
 }
-

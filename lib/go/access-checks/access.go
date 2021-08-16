@@ -1,4 +1,4 @@
-package access 
+package access
 
 import (
 	"github.com/bjartek/go-with-the-flow/gwtf"
