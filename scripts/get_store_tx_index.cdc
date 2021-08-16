@@ -1,7 +1,6 @@
 // This script gets the current TxIndex for payloads stored in multiSigManager in a resource 
 // The new payload must be this value + 1
 
-import FungibleToken from 0x{{.FungibleToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 
