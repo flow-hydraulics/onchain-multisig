@@ -191,3 +191,90 @@ func TestSameAcctCannotAddMultipleSigPerTxIndex(t *testing.T) {
 	assert.Error(t, err)
 
 }
+
+func TestDepositWithFullMultiSigAccount(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	transferAmount := "15.50000000"
+	vaultAcct := "vaulted-account"
+
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = AddVaultToAccount(g, Acct1000)
+	assert.NoError(t, err)
+
+	// give one of the multisig signers some tokens
+	seedAmount := "100.00000000"
+	_, err = AccountSignerTransferTokens(g, seedAmount, "owner", Acct1000)
+	assert.NoError(t, err)
+
+	balanceA, err := util.GetBalance(g, Acct1000)
+	assert.NoError(t, err)
+
+	balanceAV, err := util.GetBalance(g, vaultAcct)
+	assert.NoError(t, err)
+
+	// transferAmount will come out of the acct who adds the payload, Acct1000
+	_, err = MultiSig_Deposit(g, transferAmount, initTxIndex+uint64(1), Acct1000, vaultAcct, true)
+	assert.NoError(t, err)
+
+	balanceB, err := util.GetBalance(g, Acct1000)
+	assert.NoError(t, err)
+
+	postTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), postTxIndex-initTxIndex)
+
+	events, err := MultiSig_VaultExecuteTx(g, postTxIndex, "owner", vaultAcct)
+	assert.NoError(t, err)
+
+	balanceBV, err := util.GetBalance(g, vaultAcct)
+	assert.NoError(t, err)
+
+	fmt.Println("execution: ", events)
+	fmt.Println("balanceBV: ", balanceBV)
+	fmt.Println("balanceAV: ", balanceAV)
+
+	assert.Equal(t, transferAmount, (balanceA - balanceB).String())
+	assert.Equal(t, transferAmount, (balanceBV - balanceAV).String())
+}
+
+func TestRemoveResourceWithFullMultiSigAccount(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	transferAmount := "15.50000000"
+	vaultAcct := "vaulted-account"
+
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	balanceA, err := util.GetBalance(g, Acct1000)
+	assert.NoError(t, err)
+
+	ownerBalanceA, err := util.GetBalance(g, "owner")
+	assert.NoError(t, err)
+
+	// transferAmount will come out of the acct who adds the payload, Acct1000
+	_, err = MultiSig_Deposit(g, transferAmount, initTxIndex+uint64(1), Acct1000, vaultAcct, true)
+	assert.NoError(t, err)
+
+	balanceB, err := util.GetBalance(g, Acct1000)
+	assert.NoError(t, err)
+
+	indexToRemove, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_RemoveVaultedPayload(g, indexToRemove+uint64(1), indexToRemove, Acct1000, vaultAcct, true)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_VaultExecuteTx(g, indexToRemove+uint64(1), "owner", vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_VaultExecuteTx(g, indexToRemove, "owner", vaultAcct)
+	assert.Error(t, err)
+
+	ownerBalanceB, err := util.GetBalance(g, "owner")
+	assert.NoError(t, err)
+
+	assert.Equal(t, transferAmount, (balanceA - balanceB).String())
+	assert.Equal(t, transferAmount, (ownerBalanceB - ownerBalanceA).String())
+}

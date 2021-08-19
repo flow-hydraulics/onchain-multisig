@@ -92,7 +92,65 @@ func MultiSig_Transfer(
 	}
 	if newPaylaod {
 		args := []cadence.Value{ufix64, toAddr}
-		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct)
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct, "0.0")
+	} else {
+		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
+	}
+}
+
+func MultiSig_Deposit(
+	g *gwtf.GoWithTheFlow,
+	amount string,
+	txIndex uint64,
+	signerAcct string,
+	vaultAcct string,
+	newPaylaod bool,
+) (events []*gwtf.FormatedEvent, err error) {
+
+	method := "deposit"
+	ufix64, err := cadence.NewUFix64(amount)
+	if err != nil {
+		return nil, err
+	}
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, ufix64)
+	if err != nil {
+		return
+	}
+
+	sig, err := util.SignPayloadOffline(g, signable, signerAcct)
+	if err != nil {
+		return
+	}
+	if newPaylaod {
+		args := []cadence.Value{ufix64}
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct, amount)
+	} else {
+		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
+	}
+}
+
+func MultiSig_RemoveVaultedPayload(
+	g *gwtf.GoWithTheFlow,
+	txIndex uint64,
+	indexToRemove uint64,
+	signerAcct string,
+	vaultAcct string,
+	newPaylaod bool,
+) (events []*gwtf.FormatedEvent, err error) {
+
+	method := "removePayload"
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, cadence.UInt64(indexToRemove))
+	if err != nil {
+		return
+	}
+
+	sig, err := util.SignPayloadOffline(g, signable, signerAcct)
+	if err != nil {
+		return
+	}
+	if newPaylaod {
+		args := []cadence.Value{cadence.UInt64(indexToRemove)}
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct, "0.0")
 	} else {
 		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
 	}
