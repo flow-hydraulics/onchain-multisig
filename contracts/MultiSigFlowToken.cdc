@@ -63,8 +63,8 @@ pub contract MultiSigFlowToken: FungibleToken {
         access(self) let multiSigManager: @OnChainMultiSig.Manager;
 
         /// To submit a new paylaod, i.e. starting a new tx requiring, potentially requiring more signatures
-        pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, publicKey: String, sig: [UInt8]) {
-            self.multiSigManager.addNewPayload(resourceId: self.uuid, payload: payload, publicKey: publicKey, sig: sig);
+        pub fun addNewPayload(payload: @OnChainMultiSig.PayloadDetails, publicKey: String, sig: [UInt8]) {
+            self.multiSigManager.addNewPayload(resourceId: self.uuid, payload: <-payload, publicKey: publicKey, sig: sig);
         }
 
         /// To submit a new signature for a pre-exising payload, i.e. adding another signature
@@ -75,17 +75,20 @@ pub contract MultiSigFlowToken: FungibleToken {
         /// `configureKey` and `removeKey` functions can be used for all resources if see fit
         /// other methods must be implemented to suit the particular resource
         pub fun executeTx(txIndex: UInt64): @AnyResource? {
-            let p = self.multiSigManager.readyForExecution(txIndex: txIndex) ?? panic ("no transactable payload at given txIndex")
+            let p <- self.multiSigManager.readyForExecution(txIndex: txIndex) ?? panic ("no transactable payload at given txIndex")
             switch p.method {
                 case "configureKey":
                     let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");
                     let weight = p.args[1] as? UFix64 ?? panic ("cannot downcast weight");
+                    destroy(p)
                     self.multiSigManager.configureKeys(pks: [pubKey], kws: [weight])
                 case "removeKey":
                     let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");
+                    destroy(p)
                     self.multiSigManager.removeKeys(pks: [pubKey])
                 case "withdraw":
                     let amount  = p.args[0] as? UFix64 ?? panic ("cannot downcast amount");
+                    destroy(p)
                     return <- self.withdraw(amount: amount);
                 case "transfer":
                     let amount = p.args[0] as? UFix64 ?? panic ("cannot downcast amount");
@@ -96,6 +99,7 @@ pub contract MultiSigFlowToken: FungibleToken {
                         ?? panic("Unable to borrow receiver reference for recipient")
 
                     let v <- self.withdraw(amount: amount);
+                    destroy(p)
                     receiver.deposit(from: <- v)
             }
             return nil;

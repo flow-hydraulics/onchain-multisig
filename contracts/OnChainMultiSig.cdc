@@ -5,15 +5,20 @@ pub contract OnChainMultiSig {
     pub event NewPayloadAdded(resourceId: UInt64, txIndex: UInt64);
     pub event NewPayloadSigAdded(resourceId: UInt64, txIndex: UInt64);
 
-    pub struct PayloadDetails {
+    pub resource PayloadDetails {
         pub var txIndex: UInt64;
         pub var method: String;
         pub var args: [AnyStruct];
+        pub var rsc: @[AnyResource];
         
-        init(txIndex: UInt64, method: String, args: [AnyStruct]) {
+        init(txIndex: UInt64, method: String, args: [AnyStruct], rsc: @[AnyResource]) {
             self.txIndex = txIndex;
             self.method = method;
             self.args = args;
+            self.rsc <- rsc;
+        }
+        destroy () {
+            destroy self.rsc
         }
     }
     
@@ -55,7 +60,7 @@ pub contract OnChainMultiSig {
     /// For example, a `Vault` resource with onchain multisig capabilities should implement these interfaces,
     /// see example in "./MultiSigFlowToken"
     pub resource interface PublicSigner {
-        pub fun addNewPayload(payload: PayloadDetails, publicKey: String, sig: [UInt8]);
+        pub fun addNewPayload(payload: @PayloadDetails, publicKey: String, sig: [UInt8]);
         pub fun addPayloadSignature (txIndex: UInt64, publicKey: String, sig: [UInt8]);
         pub fun executeTx(txIndex: UInt64): @AnyResource?;
         pub fun UUID(): UInt64;
@@ -79,9 +84,9 @@ pub contract OnChainMultiSig {
     pub resource interface SignatureManager {
         pub fun getSignerKeys(): [String];
         pub fun getSignerKeyAttr(publicKey: String): PubKeyAttr?;
-        pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, publicKey: String, sig: [UInt8]);
+        pub fun addNewPayload (resourceId: UInt64, payload: @PayloadDetails, publicKey: String, sig: [UInt8]);
         pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, publicKey: String, sig: [UInt8]);
-        pub fun readyForExecution(txIndex: UInt64): PayloadDetails?;
+        pub fun readyForExecution(txIndex: UInt64): @PayloadDetails?;
         pub fun configureKeys (pks: [String], kws: [UFix64]);
         pub fun removeKeys (pks: [String]);
     }
@@ -109,7 +114,7 @@ pub contract OnChainMultiSig {
         ///
         /// A Map of an assigned Transaction Index and the Payload represented 
         /// by `PayloadDetails`
-        access(self) let payloads: {UInt64: PayloadDetails}
+        access(self) let payloads: @{UInt64: PayloadDetails}
 
         /// Payload Signatures
         ///
@@ -132,7 +137,7 @@ pub contract OnChainMultiSig {
         /// they are added
         ///
         /// Note: Currently only support limited types 
-        pub fun getSignableData(payload: PayloadDetails): [UInt8] {
+        pub fun getSignableData(payload: &PayloadDetails): [UInt8] {
             var s = payload.txIndex.toBigEndianBytes();
             s = s.concat(payload.method.utf8);
             for a in payload.args {
@@ -185,7 +190,7 @@ pub contract OnChainMultiSig {
         /// `payload`   : the payload of the transaction represented by the `PayloadDetails` struct
         /// `publicKey` : the public key (must be in the keyList) that signed the `sig`
         /// `sig`       : the signature where the message is the signable data of the payload
-        pub fun addNewPayload (resourceId: UInt64, payload: PayloadDetails, publicKey: String, sig: [UInt8]) {
+        pub fun addNewPayload (resourceId: UInt64, payload: @PayloadDetails, publicKey: String, sig: [UInt8]) {
 
             // if the provided key is not in keyList, tx is rejected
             assert(self.keyList.containsKey(publicKey), message: "Public key is not a registered signer");
@@ -202,13 +207,13 @@ pub contract OnChainMultiSig {
 
             // check if the payloadSig is signed by one of the keys in `keyList`, preventing others from adding to storage
             // if approvalWeight is nil, the public key is not in the `keyList` or cannot be verified
-            let approvalWeight = self.verifySigners(payload: payload, txIndex: nil, pks: [publicKey], sigs: keyListSig)
+            let approvalWeight = self.verifySigners(payload: &payload as &PayloadDetails, txIndex: nil, pks: [publicKey], sigs: keyListSig)
             if ( approvalWeight == nil) {
                 panic ("Invalid signer")
             }
 
             // insert the payload and the first signature into the resource maps
-            self.payloads.insert(key: txIndex, payload);
+            self.payloads[txIndex] <-! payload;
 
             let payloadSigDetails = PayloadSigDetails(
                     keyListSignatures: keyListSig,
@@ -266,7 +271,7 @@ pub contract OnChainMultiSig {
         /// https://docs.onflow.org/concepts/accounts-and-keys/#weighted-keys
         ///
         /// Note: if the transaction is ready, the payload and signatures are removed from the maps and must be executed
-        pub fun readyForExecution(txIndex: UInt64): PayloadDetails? {
+        pub fun readyForExecution(txIndex: UInt64): @PayloadDetails? {
             assert(self.payloads.containsKey(txIndex), message: "No payload for such index");
             let pks = self.payloadSigs[txIndex]!.pubKeys;
             let sigs = self.payloadSigs[txIndex]!.keyListSignatures;
@@ -276,8 +281,8 @@ pub contract OnChainMultiSig {
             }
             if (approvalWeight! >= 1000.0) {
                 self.payloadSigs.remove(key: txIndex)!;
-                let pd = self.payloads.remove(key: txIndex)!;
-                return pd
+                let pd <- self.payloads.remove(key: txIndex)!;
+                return <- pd
             } else {
                 return nil
             }
@@ -287,7 +292,7 @@ pub contract OnChainMultiSig {
         /// We do not match the payload from a txIndex and the provided, therefore we reject caller if both are provided.
         /// 
         /// The total weight of valid sigatures is returned, if any.
-        pub fun verifySigners (payload: PayloadDetails?, txIndex: UInt64?, pks: [String], sigs: [Crypto.KeyListSignature]): UFix64? {
+        pub fun verifySigners (payload: &PayloadDetails?, txIndex: UInt64?, pks: [String], sigs: [Crypto.KeyListSignature]): UFix64? {
             assert(payload != nil || txIndex != nil, message: "Cannot verify signature without payload or txIndex");
             assert(!(payload != nil && txIndex != nil), message: "can only verify signature for either payload or txIndex");
             assert(pks.length == sigs.length, message: "Cannot verify signatures without corresponding public keys");
@@ -300,8 +305,9 @@ pub contract OnChainMultiSig {
             if (payload != nil) {
                 payloadInBytes = self.getSignableData(payload: payload!);
             } else {
-                let p = self.payloads[txIndex!];
-                payloadInBytes = self.getSignableData(payload: p!);
+                let p <- self.payloads.remove(key: txIndex!)!;
+                payloadInBytes = self.getSignableData(payload: &p as &PayloadDetails);
+                self.payloads[txIndex!] <-! p;
             }
 
             var i = 0;
@@ -336,10 +342,14 @@ pub contract OnChainMultiSig {
             }
             
         }
+
+        destroy () {
+            destroy self.payloads
+        }
         
         init(publicKeys: [String], pubKeyAttrs: [PubKeyAttr]){
             assert( publicKeys.length == pubKeyAttrs.length, message: "Public keys must have associated attributes")
-            self.payloads = {};
+            self.payloads <- {};
             self.payloadSigs = {};
             self.keyList = {};
             self.txIndex = 0;
@@ -354,5 +364,9 @@ pub contract OnChainMultiSig {
     
     pub fun createMultiSigManager(publicKeys: [String], pubKeyAttrs: [PubKeyAttr]): @Manager {
         return <- create Manager(publicKeys: publicKeys, pubKeyAttrs: pubKeyAttrs)
+    }
+
+    pub fun createPayload(txIndex: UInt64, method: String, args: [AnyStruct], rsc: @[AnyResource]): @PayloadDetails{
+        return <- create PayloadDetails(txIndex: txIndex, method: method, args: args, rsc: <-rsc)
     }
 }

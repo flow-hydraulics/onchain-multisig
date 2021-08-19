@@ -14,7 +14,7 @@ transaction (sig: String, txIndex: UInt64, method: String, args: [AnyStruct], pu
             .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
             ?? panic("Could not borrow vault pub sig reference")
         
-        let p = OnChainMultiSig.PayloadDetails(txIndex: txIndex, method: method, args: args);
-        return pubSigRef.addNewPayload(payload: p, publicKey: publicKey, sig: sig.decodeHex()) 
+        let p <- OnChainMultiSig.createPayload(txIndex: txIndex, method: method, args: args, rsc: []);
+        return pubSigRef.addNewPayload(payload: <-p, publicKey: publicKey, sig: sig.decodeHex()) 
     }
 }
