@@ -1,18 +1,27 @@
 import Crypto
-import FungibleToken from "./FungibleToken.cdc" 
+import FungibleToken from "./FungibleToken.cdc"
 
 pub contract OnChainMultiSig {
     
     pub event NewPayloadAdded(resourceId: UInt64, txIndex: UInt64);
     pub event NewPayloadSigAdded(resourceId: UInt64, txIndex: UInt64);
 
-    // Payload Details is not exposed outside of @Manager until it is 
-    // returned when the transaction is ready in `readyForExecution`
-    // Once it has been returned, it is no longer signable
+
+    /// PayloadDetails
+    ///
+    /// A resource that contains the method, args, resource required to execute a transaction
+    /// The signatures from the signers are also stored here to be verified if enough signers
+    /// have signed
+    ///
+    /// Payload Details is not exposed outside of @Manager until it is 
+    /// returned when the transaction is ready in `readyForExecution`
+    /// Once it has been returned, it is no longer signable
     pub resource PayloadDetails {
         pub var txIndex: UInt64;
         pub var method: String;
-        pub(set) var rsc: @FungibleToken.Vault?;
+        // This is settable because we need to swap the vault out AFTER
+        // it has been returned to use it. 
+        pub(set) var rsc: @AnyResource?;
         pub let args: [AnyStruct];
         /// Payload Signatures
         ///
@@ -51,8 +60,7 @@ pub contract OnChainMultiSig {
             return s; 
         }
         
-        /// Verifies the signature matches the `payload` or the `txIndex`, exclusively.
-        /// We do not match the payload from a txIndex and the provided, therefore we reject caller if both are provided.
+        /// Verifies the signature matches the `payload`
         /// 
         /// The total weight of valid sigatures is returned, if any.
         pub fun verifySigners (pks: [String], sigs: [Crypto.KeyListSignature], currentKeyList: {String: PubKeyAttr}): UFix64? {
@@ -96,6 +104,9 @@ pub contract OnChainMultiSig {
             }
         }
         
+        /// addSignature
+        ///
+        /// Once signature has been verified, it can be added here
         pub fun addSignature(keyListSig: Crypto.KeyListSignature, publicKey: String){
             self.keyListSignatures.append(keyListSig);
             self.pubKeys.append(publicKey);
@@ -105,7 +116,7 @@ pub contract OnChainMultiSig {
             destroy self.rsc
         }
 
-        init(txIndex: UInt64, method: String, args: [AnyStruct], rsc: @FungibleToken.Vault?) {
+        init(txIndex: UInt64, method: String, args: [AnyStruct], rsc: @AnyResource?) {
             self.args = args;
             self.txIndex = txIndex;
             self.method = method;
@@ -113,13 +124,15 @@ pub contract OnChainMultiSig {
             self.pubKeys = []
             
             // Checks that the resource details are within the args
-            // This ensures that new signatures signers are aware of this
-            if rsc != nil {
-                let r <- rsc!;
-                assert(r.balance == args[0] as! UFix64, message: "First arguement must be balance of Vault")
-                self.rsc <- r;
+            // This ensures that new signatures signers are aware of the details.
+            // Note: This is currently only for FungibleToken, not generic 
+            let r: @AnyResource <- rsc ?? nil
+            if r != nil && r.isInstance(Type<@FungibleToken.Vault>()) {
+                    let vault <- r as! @FungibleToken.Vault
+                    assert(vault.balance == args[0] as! UFix64, message: "First arguement must be balance of Vault")
+                    self.rsc <- vault;
             } else {
-                self.rsc <- rsc;
+                self.rsc <- r;
             }
         }
     }
@@ -365,7 +378,7 @@ pub contract OnChainMultiSig {
         return <- create Manager(publicKeys: publicKeys, pubKeyAttrs: pubKeyAttrs)
     }
 
-    pub fun createPayload(txIndex: UInt64, method: String, args: [AnyStruct], rsc: @FungibleToken.Vault?): @PayloadDetails{
+    pub fun createPayload(txIndex: UInt64, method: String, args: [AnyStruct], rsc: @AnyResource?): @PayloadDetails{
         return <- create PayloadDetails(txIndex: txIndex, method: method, args: args, rsc: <-rsc)
     }
 }

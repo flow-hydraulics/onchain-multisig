@@ -91,7 +91,7 @@ pub contract MultiSigFlowToken: FungibleToken {
                     let payloadToRemove <- self.multiSigManager.removePayload(txIndex: txIndex)
                     // creating a `Vault` resource to replace the existing `@[AnyResource]`
                     // https://docs.onflow.org/cadence/language/composite-types/#resources-in-arrays-and-dictionaries
-                    var temp: @FungibleToken.Vault? <- MultiSigFlowToken.createEmptyVault() as! @FungibleToken.Vault
+                    var temp: @AnyResource? <- MultiSigFlowToken.createEmptyVault()
                     payloadToRemove.rsc <-> temp
                     destroy(p)
                     destroy(payloadToRemove)
@@ -103,10 +103,12 @@ pub contract MultiSigFlowToken: FungibleToken {
                 case "deposit":
                     // creating a `Vault` resource to replace the existing `@[AnyResource]`
                     // https://docs.onflow.org/cadence/language/composite-types/#resources-in-arrays-and-dictionaries
-                    var temp: @FungibleToken.Vault? <- MultiSigFlowToken.createEmptyVault() as! @FungibleToken.Vault
+                    // var temp: @FungibleToken.Vault? <- MultiSigFlowToken.createEmptyVault() as! @FungibleToken.Vault
+                    var temp: @AnyResource? <- MultiSigFlowToken.createEmptyVault()
                     p.rsc <-> temp
                     destroy(p)
-                    self.deposit(from: <- temp!);
+                    let vault <- temp! as! @FungibleToken.Vault
+                    self.deposit(from: <- vault );
                 case "transfer":
                     let amount = p.args[0] as? UFix64 ?? panic ("cannot downcast amount");
                     let to = p.args[1] as? Address ?? panic ("cannot downcast address");
