@@ -1,4 +1,4 @@
-// Masterminter uses this to configure which minter the minter controller manages
+// New payload to be added to multiSigManager for a resource 
 
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}

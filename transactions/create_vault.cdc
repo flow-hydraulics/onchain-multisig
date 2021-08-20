@@ -46,6 +46,7 @@ transaction(multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
             target: MultiSigFlowToken.VaultStoragePath
         )
 
+        // The transaction that creates the vault can also add required multiSig public keys to the multiSigManager
         let s = signer.borrow<&MultiSigFlowToken.Vault>(from: MultiSigFlowToken.VaultStoragePath) ?? panic ("cannot borrow own resource")
         s.addKeys(multiSigPubKeys: multiSigPubKeys, multiSigKeyWeights: multiSigKeyWeights)
     }

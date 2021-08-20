@@ -1,4 +1,4 @@
-// This script reads the balance field of an account's FiatToken Balance
+// This script reads the balance field of an account's FlowToken Balance
 
 import FungibleToken from 0x{{.FungibleToken}}
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}

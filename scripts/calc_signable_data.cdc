@@ -1,4 +1,4 @@
-// This script reads the allowance field set in a vault for another resource 
+// This script calculate the signable bytes for each input value 
 
 
 // Currently AnyStruct is input arg is not allowed, hence wrapping it in optional

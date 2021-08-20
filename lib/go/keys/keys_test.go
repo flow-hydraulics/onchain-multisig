@@ -46,7 +46,11 @@ func TestRemovedKeyCannotAddSig(t *testing.T) {
 	txIndex, err := util.GetTxIndex(g, vaultAcct)
 	assert.NoError(t, err)
 
-	_, err = MultiSig_RemoveKey(g, removedAcct, txIndex, removedAcct, vaultAcct, false)
+	// Add a new payload to test new signature cannot be added by removed account
+	_, err = MultiSig_RemoveKey(g, vault.Acct500_1, txIndex+uint64(1), vault.Acct1000, vaultAcct, true)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_RemoveKey(g, removedAcct, txIndex+uint64(1), removedAcct, vaultAcct, false)
 	assert.Error(t, err)
 }
 

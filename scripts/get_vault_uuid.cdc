@@ -1,3 +1,5 @@
+// This script gets the uuid of the vault that owns the multiSigManager
+
 import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 import MultiSigFlowToken from 0x{{.MultiSigFlowToken}}
 

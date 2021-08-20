@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	// This relative path to flow.json is  different in tests as it is the main package
+	// This relative path to flow.json is different in tests as it is the main package
 	g := gwtf.NewGoWithTheFlow("../../flow.json")
 
 	contractCode := util.ParseCadenceTemplate("../../contracts/MultiSigFlowToken.cdc")
@@ -25,6 +25,9 @@ func main() {
 		"w-250-2",
 		"non-registered-account",
 	)
+	// The "owner" defined in flow.json is the owner of the contracts:
+	// - `MultiSigFlowToken`
+	// - `OnChainMultiSig`
 	e, err := g.TransactionFromFile(txFilename, code).
 		SignProposeAndPayAs("owner").
 		StringArgument("MultiSigFlowToken").

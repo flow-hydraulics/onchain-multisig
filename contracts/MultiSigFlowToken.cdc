@@ -28,7 +28,7 @@ pub contract MultiSigFlowToken: FungibleToken {
         FungibleToken.Receiver, 
         FungibleToken.Balance, 
         OnChainMultiSig.PublicSigner, 
-        OnChainMultiSig.PrivateKeyManager {
+        OnChainMultiSig.KeyManager {
 
         // holds the balance of a users tokens
         pub var balance: UFix64
@@ -36,7 +36,7 @@ pub contract MultiSigFlowToken: FungibleToken {
         // initialize the balance at resource creation time
         init(balance: UFix64) {
             self.balance = balance;
-            self.signatureStore = OnChainMultiSig.SignatureStore(publicKeys: [], pubKeyAttrs: []);
+            self.multiSigManager <-  OnChainMultiSig.createMultiSigManager(publicKeys: [], pubKeyAttrs: [])
         }
         
 
@@ -53,48 +53,37 @@ pub contract MultiSigFlowToken: FungibleToken {
             vault.balance = 0.0
             destroy vault
         }
-
-        // PublicSigner interface requirements 
-        // 1. signatureStore: Stores the payloads, transactions pending to be signed and signature
-        // 2. addNewPayload: add new transaction payload to the signature store waiting for others to sign
-        // 3. addPayloadSignature: add signature to store for existing paylaods by payload index
-        // 4. executeTx: attempt to execute the transaction at a given index after required signatures have been added
-        // 5. UUID: gets the uuid of this resource 
-        // Interfaces 1-3 uses `OnChainMultiSig.Manager` struct for code implementation
-        // Interface 4 needs to be implemented specifically for each resource
-
-        /// struct to keep track of partial sigatures
-        pub var signatureStore: OnChainMultiSig.SignatureStore;
         
-        /// To submit a new paylaod, i.e. starting a new tx requiring more signatures
+        // 
+        // Below resource and interfaces are required for any resources wanting to use OnChainMultiSig
+        // 
+
+        // Resource to keep track of partial sigatures and payloads, required for onchain multisig features.
+        // Limited to `access(self)` to avoid exposing all functions in `SignatureManager` interface to account owner(s)
+        access(self) let multiSigManager: @OnChainMultiSig.Manager;
+
+        /// To submit a new paylaod, i.e. starting a new tx requiring, potentially requiring more signatures
         pub fun addNewPayload(payload: OnChainMultiSig.PayloadDetails, publicKey: String, sig: [UInt8]) {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.addNewPayload(resourceId: self.uuid, payload: payload, publicKey: publicKey, sig: sig);
-            self.signatureStore = newSignatureStore
+            self.multiSigManager.addNewPayload(resourceId: self.uuid, payload: payload, publicKey: publicKey, sig: sig);
         }
 
         /// To submit a new signature for a pre-exising payload, i.e. adding another signature
         pub fun addPayloadSignature (txIndex: UInt64, publicKey: String, sig: [UInt8]) {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.addPayloadSignature(resourceId: self.uuid, txIndex: txIndex, publicKey: publicKey, sig: sig);
-            self.signatureStore = newSignatureStore
+            self.multiSigManager.addPayloadSignature(resourceId: self.uuid, txIndex: txIndex, publicKey: publicKey, sig: sig);
        }
         /// To execute the multisig transaction iff conditions are met
+        /// `configureKey` and `removeKey` functions can be used for all resources if see fit
+        /// other methods must be implemented to suit the particular resource
         pub fun executeTx(txIndex: UInt64): @AnyResource? {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let exeDetails = manager.readyForExecution(txIndex: txIndex) ?? panic ("no transactable payload at given txIndex")
-            let p = exeDetails.payload            
-            self.signatureStore = exeDetails.signatureStore
+            let p = self.multiSigManager.readyForExecution(txIndex: txIndex) ?? panic ("no transactable payload at given txIndex")
             switch p.method {
                 case "configureKey":
                     let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");
                     let weight = p.args[1] as? UFix64 ?? panic ("cannot downcast weight");
-                    let newSignatureStore = manager.configureKeys(pks: [pubKey], kws: [weight])
-                    self.signatureStore = newSignatureStore; 
+                    self.multiSigManager.configureKeys(pks: [pubKey], kws: [weight])
                 case "removeKey":
                     let pubKey = p.args[0] as? String ?? panic ("cannot downcast public key");
-                    let newSignatureStore = manager.removeKeys(pks: [pubKey])
-                    self.signatureStore = newSignatureStore; 
+                    self.multiSigManager.removeKeys(pks: [pubKey])
                 case "withdraw":
                     let amount  = p.args[0] as? UFix64 ?? panic ("cannot downcast amount");
                     return <- self.withdraw(amount: amount);
@@ -116,20 +105,37 @@ pub contract MultiSigFlowToken: FungibleToken {
             return self.uuid;
         }; 
 
+        pub fun getTxIndex(): UInt64 {
+            return self.multiSigManager.txIndex
+        }
+
+        pub fun getSignerKeys(): [String] {
+            return self.multiSigManager.getSignerKeys()
+        }
+        pub fun getSignerKeyAttr(publicKey: String): OnChainMultiSig.PubKeyAttr? {
+            return self.multiSigManager.getSignerKeyAttr(publicKey: publicKey)
+        }
+
+        //
+        // --- end of `OnChainMultiSig.PublicSigner` interfaces
+        //
+
+        //
+        // Optional Priv Capbilities for owner of the vault to add / remove keys `OnChainMultiSig.KeyManager`
+        // 
+        // These follows the usual account authorization logic
+        // i.e. if it is an account with multiple keys, then the total weight of the signatures must be > 1000
         pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.configureKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights)
-            self.signatureStore = newSignatureStore; 
+            self.multiSigManager.configureKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights)
         }
 
         pub fun removeKeys( multiSigPubKeys: [String]) {
-            let manager = OnChainMultiSig.Manager(sigStore: self.signatureStore);
-            let newSignatureStore = manager.removeKeys(pks: multiSigPubKeys)
-            self.signatureStore = newSignatureStore; 
+            self.multiSigManager.removeKeys(pks: multiSigPubKeys)
         }
 
         destroy() {
             MultiSigFlowToken.totalSupply = MultiSigFlowToken.totalSupply - self.balance
+            destroy self.multiSigManager
         }
     }
 
