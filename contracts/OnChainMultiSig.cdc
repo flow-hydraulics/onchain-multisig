@@ -3,9 +3,82 @@ import FungibleToken from "./FungibleToken.cdc"
 
 pub contract OnChainMultiSig {
     
+    //
+    // ------- Events ------- 
+    //
     pub event NewPayloadAdded(resourceId: UInt64, txIndex: UInt64);
     pub event NewPayloadSigAdded(resourceId: UInt64, txIndex: UInt64);
 
+    //
+    // ------- Interfaces ------- 
+    //
+
+    /// Public Signer
+    /// 
+    /// These interfaces is intended for public usage, a resource that stores the @Manager should implement
+    ///
+    /// 1. addNewPayload: add new transaction payload to the signature store waiting for others to sign
+    /// 2. addPayloadSignature: add signature to store for existing paylaods by payload index
+    /// 3. executeTx: attempt to execute the transaction at a given index after required signatures have been added
+    /// 4. UUID: gets the uuid of this resource 
+    /// 5. getTxIndex: gets the sequentially assigned current txIndex of multisig pending tx of this resource 
+    /// 6. getSignerKeys: gets the list of public keys for the resource's multisig signers 
+    /// 7. getSignerKeyAttr: gets the stored key attributes 
+    /// Interfaces 1&2 use `OnChainMultiSig.Manager` resource for code implementation
+    /// Interface 3 needs to be implemented specifically for each resource
+    /// Interfaces 4-7 are useful information to interact with the multiSigManager 
+    ///
+    /// For example, a `Vault` resource with onchain multisig capabilities should implement these interfaces,
+    /// see example in "./MultiSigFlowToken"
+    pub resource interface PublicSigner {
+        pub fun addNewPayload(payload: @PayloadDetails, publicKey: String, sig: [UInt8]);
+        pub fun addPayloadSignature (txIndex: UInt64, publicKey: String, sig: [UInt8]);
+        pub fun executeTx(txIndex: UInt64): @AnyResource?;
+        pub fun UUID(): UInt64;
+        pub fun getTxIndex(): UInt64;
+        pub fun getSignerKeys(): [String];
+        pub fun getSignerKeyAttr(publicKey: String): PubKeyAttr?;
+    }
+    
+    /// Key Manager
+    ///
+    /// Optional interfaces for owner of the vault to add / remove keys in @Manager. 
+    pub resource interface KeyManager {
+        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]);
+        pub fun removeKeys( multiSigPubKeys: [String]);
+    }
+    
+    /// Signature Manager
+    ///
+    /// These interfaces are minimum required for implementors of `PublicSigner` to work
+    /// with the @Manager resource
+    pub resource interface SignatureManager {
+        pub fun getSignerKeys(): [String];
+        pub fun getSignerKeyAttr(publicKey: String): PubKeyAttr?;
+        pub fun addNewPayload (resourceId: UInt64, payload: @PayloadDetails, publicKey: String, sig: [UInt8]);
+        pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, publicKey: String, sig: [UInt8]);
+        pub fun readyForExecution(txIndex: UInt64): @PayloadDetails?;
+        pub fun configureKeys (pks: [String], kws: [UFix64]);
+        pub fun removeKeys (pks: [String]);
+    }
+    
+    //
+    // ------- Struct ------- 
+    //
+
+    pub struct PubKeyAttr{
+        pub let sigAlgo: UInt8;
+        pub let weight: UFix64
+        
+        init(sa: UInt8, w: UFix64) {
+            self.sigAlgo = sa;
+            self.weight = w;
+        }
+    }
+
+    //
+    // ------- Resources ------- 
+    //
 
     /// PayloadDetails
     ///
@@ -141,65 +214,6 @@ pub contract OnChainMultiSig {
         }
     }
     
-    pub struct PubKeyAttr{
-        pub let sigAlgo: UInt8;
-        pub let weight: UFix64
-        
-        init(sa: UInt8, w: UFix64) {
-            self.sigAlgo = sa;
-            self.weight = w;
-        }
-    }
-    
-    /// Public Signer
-    /// 
-    /// These interfaces is intended for public usage, a resource that stores the @Manager should implement
-    ///
-    /// 1. addNewPayload: add new transaction payload to the signature store waiting for others to sign
-    /// 2. addPayloadSignature: add signature to store for existing paylaods by payload index
-    /// 3. executeTx: attempt to execute the transaction at a given index after required signatures have been added
-    /// 4. UUID: gets the uuid of this resource 
-    /// 5. getTxIndex: gets the sequentially assigned current txIndex of multisig pending tx of this resource 
-    /// 6. getSignerKeys: gets the list of public keys for the resource's multisig signers 
-    /// 7. getSignerKeyAttr: gets the stored key attributes 
-    /// Interfaces 1&2 use `OnChainMultiSig.Manager` resource for code implementation
-    /// Interface 3 needs to be implemented specifically for each resource
-    /// Interfaces 4-7 are useful information to interact with the multiSigManager 
-    ///
-    /// For example, a `Vault` resource with onchain multisig capabilities should implement these interfaces,
-    /// see example in "./MultiSigFlowToken"
-    pub resource interface PublicSigner {
-        pub fun addNewPayload(payload: @PayloadDetails, publicKey: String, sig: [UInt8]);
-        pub fun addPayloadSignature (txIndex: UInt64, publicKey: String, sig: [UInt8]);
-        pub fun executeTx(txIndex: UInt64): @AnyResource?;
-        pub fun UUID(): UInt64;
-        pub fun getTxIndex(): UInt64;
-        pub fun getSignerKeys(): [String];
-        pub fun getSignerKeyAttr(publicKey: String): PubKeyAttr?;
-    }
-    
-    /// Key Manager
-    ///
-    /// Optional interfaces for owner of the vault to add / remove keys in @Manager. 
-    pub resource interface KeyManager {
-        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]);
-        pub fun removeKeys( multiSigPubKeys: [String]);
-    }
-    
-    /// Signature Manager
-    ///
-    /// These interfaces are minimum required for implementors of `PublicSigner` to work
-    /// with the @Manager resource
-    pub resource interface SignatureManager {
-        pub fun getSignerKeys(): [String];
-        pub fun getSignerKeyAttr(publicKey: String): PubKeyAttr?;
-        pub fun addNewPayload (resourceId: UInt64, payload: @PayloadDetails, publicKey: String, sig: [UInt8]);
-        pub fun addPayloadSignature (resourceId: UInt64, txIndex: UInt64, publicKey: String, sig: [UInt8]);
-        pub fun readyForExecution(txIndex: UInt64): @PayloadDetails?;
-        pub fun configureKeys (pks: [String], kws: [UFix64]);
-        pub fun removeKeys (pks: [String]);
-    }
-
     /// Manager
     ///
     /// The main resource that stores, keys, payloads and signature before all signatures are collected / executed
@@ -377,7 +391,11 @@ pub contract OnChainMultiSig {
             }
         }
     }
-    
+
+    // 
+    // ------- Functions --------
+    //
+        
     pub fun createMultiSigManager(publicKeys: [String], pubKeyAttrs: [PubKeyAttr]): @Manager {
         return <- create Manager(publicKeys: publicKeys, pubKeyAttrs: pubKeyAttrs)
     }

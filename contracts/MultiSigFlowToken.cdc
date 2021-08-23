@@ -3,9 +3,6 @@ import OnChainMultiSig from 0x{{.OnChainMultiSig}}
 
 pub contract MultiSigFlowToken: FungibleToken {
 
-    // Total supply of Flow tokens in existence
-    pub var totalSupply: UFix64
-
     // Event that is emitted when the contract is created
     pub event TokensInitialized(initialSupply: UFix64)
 
@@ -21,6 +18,9 @@ pub contract MultiSigFlowToken: FungibleToken {
     pub let VaultReceiverPubPath: PublicPath;
     pub let VaultPubSigner: PublicPath;
 
+    // Total supply of Flow tokens in existence
+    pub var totalSupply: UFix64
+
     // Vault
     //
     pub resource Vault: 
@@ -33,12 +33,10 @@ pub contract MultiSigFlowToken: FungibleToken {
         // holds the balance of a users tokens
         pub var balance: UFix64
 
-        // initialize the balance at resource creation time
-        init(balance: UFix64) {
-            self.balance = balance;
-            self.multiSigManager <-  OnChainMultiSig.createMultiSigManager(publicKeys: [], pubKeyAttrs: [])
-        }
-        
+        // Resource to keep track of partial sigatures and payloads, required for onchain multisig features.
+        // Limited to `access(self)` to avoid exposing all functions in `SignatureManager` interface to account owner(s)
+        access(self) let multiSigManager: @OnChainMultiSig.Manager;
+
 
         pub fun withdraw(amount: UFix64): @FungibleToken.Vault {
             self.balance = self.balance - amount
@@ -55,12 +53,8 @@ pub contract MultiSigFlowToken: FungibleToken {
         }
         
         // 
-        // Below resource and interfaces are required for any resources wanting to use OnChainMultiSig
+        // Below are the interfaces are required for any resources wanting to use OnChainMultiSig
         // 
-
-        // Resource to keep track of partial sigatures and payloads, required for onchain multisig features.
-        // Limited to `access(self)` to avoid exposing all functions in `SignatureManager` interface to account owner(s)
-        access(self) let multiSigManager: @OnChainMultiSig.Manager;
 
         /// To submit a new paylaod, i.e. starting a new tx requiring, potentially requiring more signatures
         pub fun addNewPayload(payload: @OnChainMultiSig.PayloadDetails, publicKey: String, sig: [UInt8]) {
@@ -157,15 +151,21 @@ pub contract MultiSigFlowToken: FungibleToken {
             MultiSigFlowToken.totalSupply = MultiSigFlowToken.totalSupply - self.balance
             destroy self.multiSigManager
         }
-    }
 
-    pub fun createEmptyVault(): @Vault {
-        return <-create Vault(balance: 0.0)
+        // initialize the balance at resource creation time
+        init(balance: UFix64) {
+            self.balance = balance;
+            self.multiSigManager <-  OnChainMultiSig.createMultiSigManager(publicKeys: [], pubKeyAttrs: [])
+        }
+        
     }
 
     pub resource Administrator {
     }
 
+    pub fun createEmptyVault(): @Vault {
+        return <-create Vault(balance: 0.0)
+    }
 
     init(adminAccount: AuthAccount) {
         self.totalSupply = 100000.0
