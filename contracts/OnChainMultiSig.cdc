@@ -22,13 +22,17 @@ pub contract OnChainMultiSig {
         // This is settable because we need to swap the vault out AFTER
         // it has been returned to use it. 
         pub(set) var rsc: @AnyResource?;
-        pub let args: [AnyStruct];
+        access(self) let args: [AnyStruct];
         /// Payload Signatures
         ///
         /// All the added signatures from signers in the `keyList`
         access(contract) let keyListSignatures: [Crypto.KeyListSignature];
         access(contract) let pubKeys: [String];
         
+        pub fun getArg(i: UInt): AnyStruct? {
+            return self.args[i]
+        }      
+
         /// Calculates the bytes of a given payload. 
         /// This is used to create the message to verify the signatures when
         /// they are added
