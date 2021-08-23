@@ -246,6 +246,7 @@ func MultiSig_VaultNewPayload(
 	args []cadence.Value,
 	signerAcct string,
 	resourceAcct string,
+	withdrawAmount string,
 ) (events []*gwtf.FormatedEvent, err error) {
 	txFilename := "../../../transactions/add_new_payload.cdc"
 	txScript := ParseCadenceTemplate(txFilename)
@@ -259,6 +260,7 @@ func MultiSig_VaultNewPayload(
 		Argument(cadence.NewArray(args)).
 		StringArgument(signerPubKey[2:]).
 		AccountArgument(resourceAcct).
+		UFix64Argument(withdrawAmount).
 		Run()
 	events = ParseTestEvents(e)
 	return

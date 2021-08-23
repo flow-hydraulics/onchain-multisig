@@ -40,7 +40,7 @@ func MultiSig_RemoveKey(
 
 	if newPayload {
 		args := []cadence.Value{pkToRemove}
-		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct)
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct, "0.0")
 	} else {
 		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
 	}
@@ -75,7 +75,7 @@ func MultiSig_ConfigKey(
 
 	if newPayload {
 		args := []cadence.Value{pkToConfig, weightToConfig}
-		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct)
+		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct, "0.0")
 	} else {
 		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)
 	}
