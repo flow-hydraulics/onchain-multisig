@@ -62,24 +62,32 @@ and queries for:
 Internal to the `Manager` resource, it implements the `SignatureManager` interface which allows the implementation of `PublicSigner`
 functions on the multisig supported resources to work with the `Manager`.
 
-#### Usage
+## Usage
 
-We will use a simple `Vault` resource in the `MultiSigFlowToken` contract to demonstrate the usage of the `PublicSigner`,
+We have used a simple `Vault` resource in the `MultiSigFlowToken` contract to demonstrate the usage of the `PublicSigner`,
 how to form a [onchain-multisig signature],
 transacting with the `MultiSigFlowToken` contract and [resource owner account management].
 
-TODO code walk through
+A happy path is demostrated in this diagram:
+![happy path](./onchainmultisig.png)
 
 ### Signatures
 
-The message in the signature verified by the `Manager` resource are as such:
-**TODO details**
+The message in the signature verified by the `Manager` resource are as such, in order:
 
-- `OnChainMultiSig.PayloadDetails`
-- only a few types are supported at the moment
-- only certain `signatureAlgorithm` and `hashAlgorithm` are supported at the moment
+- `txIndex: UInt64`: The txIndex of the payload. For a new payload, this must be the latest txIndex + 1
+- `method: String`: The name of the method the multisig supported resource uses
+- `arg: AnyStructure`: The arguments that are needed (currently supports: `String`, `UInt64`, `UFix64`, `Address`)
 
-### Resource Owner Account Management
+Example of how the signer may construct their message to ensure the encoding to bytes align with the cadence
+encoding in the contract can be found in  `GetSignableDataFromScript` in `util.go`,
+which uses the script in `scripts/calc_signable_data.cdc`.
+
+The signing example can be found in `SignPayloadOffline` in `util.go`.
+
+**Note**: The current version only supports `hashAlgorithm: HashAlgorithm.SHA3_256`
+
+## Resource Owner Account Management
 
 Whilst it is possible to allow for onchain multisig feature to be available for resources,
 to limit the use to *just* be in that way will ultimately depend on the account that owns the resources.
