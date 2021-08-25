@@ -41,6 +41,7 @@ func TestRemovedKeyCannotAddSig(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 
 	vaultAcct := "vaulted-account"
+	// From the previous test
 	removedAcct := vault.Acct500_1
 
 	txIndex, err := util.GetTxIndex(g, vaultAcct)
