@@ -7,6 +7,7 @@ import (
 
 	"github.com/bjartek/go-with-the-flow/gwtf"
 	util "github.com/flow-hydraulics/onchain-multisig"
+	"github.com/flow-hydraulics/onchain-multisig/keys"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -160,6 +161,64 @@ func TestExecutePayloadWithMultipleSig(t *testing.T) {
 	assert.Equal(t, transferAmount, (initFromBalance - postFromBalance).String())
 }
 
+func TestRemovedAcctWeightsDoNotCount(t *testing.T) {
+	g := gwtf.NewGoWithTheFlow("../../../flow.json")
+	transferAmount := "15.50000000"
+	transferTo := "owner"
+
+	//
+	// First add a payload; total authorised weight is 500
+	//
+	vaultAcct := "vaulted-account"
+
+	initTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, initTxIndex+uint64(1), Acct500_1, vaultAcct, true)
+	assert.NoError(t, err)
+
+	transferTxIndex, err := util.GetTxIndex(g, vaultAcct)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), transferTxIndex-initTxIndex)
+
+	//
+	// Add another signature; total weight now is 500 + 250
+	//
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, transferTxIndex, Acct250_1, vaultAcct, false)
+	assert.NoError(t, err)
+
+	//
+	// Add another signature; total weight now is 500 + 250 + 250 = 1000
+	//
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, transferTxIndex, Acct250_2, vaultAcct, false)
+	assert.NoError(t, err)
+
+	//
+	// Now we remove the key for Acct250_1
+	//
+
+	removeTxIndex := transferTxIndex + 1
+
+	_, err = keys.MultiSig_RemoveKey(g, Acct250_2, removeTxIndex, Acct1000, vaultAcct, true)
+	assert.NoError(t, err)
+
+	_, err = MultiSig_VaultExecuteTx(g, removeTxIndex, "owner", vaultAcct)
+	assert.NoError(t, err)
+
+	// There should not have enough weight now as Acct250_2 has been removed
+	_, err = MultiSig_VaultExecuteTx(g, transferTxIndex, "owner", vaultAcct)
+	assert.Error(t, err)
+
+	//
+	// Add another signature; total weight now is 500 + 250 + 250 - 250 + 500 > 1000
+	//
+	_, err = MultiSig_Transfer(g, transferAmount, transferTo, transferTxIndex, Acct500_2, vaultAcct, false)
+	assert.NoError(t, err)
+
+	// There should now be enough weight
+	_, err = MultiSig_VaultExecuteTx(g, transferTxIndex, "owner", vaultAcct)
+	assert.NoError(t, err)
+}
 func TestSameAcctCannotAddMultipleSigPerTxIndex(t *testing.T) {
 	g := gwtf.NewGoWithTheFlow("../../../flow.json")
 	transferAmount := "15.50000000"

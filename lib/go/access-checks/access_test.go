@@ -61,16 +61,19 @@ func TestPubCannotUpdateKeyList(t *testing.T) {
 	pubAcct := "w-1000"
 	vaultAcct := "vaulted-account"
 
-	_, err := MultiSig_PubUpdateKeyList(g, pubAcct, vaultAcct)
+	initKeys, err := util.GetStoreKeys(g, "vaulted-account")
+	assert.NoError(t, err)
+
+	_, err = MultiSig_PubUpdateKeyList(g, pubAcct, vaultAcct)
 	// error: cannot access `keyList`: field has private access
 	//  --> a0a443291841b0ef697e410b6587d13d010cc39ebba9a085562a03624fe27886:18:8
 	//  |
 	//18 |         vaultRef.multiSigManager.keyList.insert(key: "1aa4", pka)
 	//  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 	assert.Error(t, err)
-	keys, err := util.GetStoreKeys(g, "vaulted-account")
+	postKeys, err := util.GetStoreKeys(g, "vaulted-account")
 	assert.NoError(t, err)
-	assert.Len(t, keys, 5)
+	assert.Equal(t, initKeys, postKeys)
 }
 
 // Owner must use the `addKeys` function in the Vault
@@ -79,7 +82,10 @@ func TestOwnerCannotUpdateKeyListDirectly(t *testing.T) {
 	ownerAcct := "vaulted-account"
 	vaultAcct := "vaulted-account"
 
-	_, err := MultiSig_OwnerUpdateKeyList(g, ownerAcct, vaultAcct)
+	initKeys, err := util.GetStoreKeys(g, "vaulted-account")
+	assert.NoError(t, err)
+
+	_, err = MultiSig_OwnerUpdateKeyList(g, ownerAcct, vaultAcct)
 
 	//	error: cannot access `keyList`: field has private access
 	// --> a317001f16f9907ec9a948bf62b70db9469d10eb7f3d0598de982e8e8f73a60d:8:8
@@ -88,7 +94,7 @@ func TestOwnerCannotUpdateKeyListDirectly(t *testing.T) {
 	//  |         ^^^^^^^^^^^^^^^^^^^^^^^^^
 	assert.Error(t, err)
 
-	keys, err := util.GetStoreKeys(g, "vaulted-account")
+	postKeys, err := util.GetStoreKeys(g, "vaulted-account")
 	assert.NoError(t, err)
-	assert.Len(t, keys, 5)
+	assert.Equal(t, initKeys, postKeys)
 }
