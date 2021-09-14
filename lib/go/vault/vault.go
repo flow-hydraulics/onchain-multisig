@@ -37,11 +37,14 @@ func AddVaultToAccount(
 		cadence.String(pk250_2[2:]),
 	}
 	multiSigKeyWeights := []cadence.Value{w1000, w500, w500, w250, w250}
+	sa := cadence.NewUInt8(1)
+	multiSigAlgos := []cadence.Value{sa, sa, sa, sa, sa}
 
 	e, err := g.TransactionFromFile(txFilename, txScript).
 		SignProposeAndPayAs(vaultAcct).
 		Argument(cadence.NewArray(multiSigPubKeys)).
 		Argument(cadence.NewArray(multiSigKeyWeights)).
+		Argument(cadence.NewArray(multiSigAlgos)).
 		Run()
 	events = util.ParseTestEvents(e)
 	return

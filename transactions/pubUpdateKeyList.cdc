@@ -15,6 +15,6 @@ transaction (multiSigVaultAddr: Address) {
             .borrow<&MultiSigFlowToken.Vault{OnChainMultiSig.PublicSigner}>()
             ?? panic("Could not borrow vault pub sig reference")
             
-        vaultRef.multiSigManager.configureKeys(pks: ["1234"], kws: [0.2])
+        vaultRef.multiSigManager.configureKeys(pks: ["1234"], kws: [0.2], sa: [1])
     }
 }
