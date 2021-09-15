@@ -65,7 +65,7 @@ func MultiSig_ConfigKey(
 	if err != nil {
 		return
 	}
-	signable, err := util.GetSignableDataFromScript(g, txIndex, method, pkToConfig, weightToConfig)
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, pkToConfig, weightToConfig, sigAlgoToConfig)
 	if err != nil {
 		return
 	}

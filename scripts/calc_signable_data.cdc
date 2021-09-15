@@ -11,6 +11,9 @@ pub fun main(v: AnyStruct?): [UInt8] {
         case Type<UInt64>():
             let temp = value as? UInt64;
             return temp!.toBigEndianBytes();
+        case Type<UInt8>():
+            let temp = value as? UInt8;
+            return temp!.toBigEndianBytes();
         case Type<UFix64>():
             let temp = value as? UFix64;
             return temp!.toBigEndianBytes();
