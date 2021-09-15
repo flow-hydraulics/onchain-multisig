@@ -60,10 +60,12 @@ func MultiSig_ConfigKey(
 	pkToConfig := cadence.NewString(g.Accounts[acctToConfig].PrivateKey.PublicKey().String()[2:])
 
 	weightToConfig, err := cadence.NewUFix64(acctToConfigWeight)
+	sigAlgoToConfig := cadence.NewUInt8(1)
+
 	if err != nil {
 		return
 	}
-	signable, err := util.GetSignableDataFromScript(g, txIndex, method, pkToConfig, weightToConfig)
+	signable, err := util.GetSignableDataFromScript(g, txIndex, method, pkToConfig, weightToConfig, sigAlgoToConfig)
 	if err != nil {
 		return
 	}
@@ -74,7 +76,7 @@ func MultiSig_ConfigKey(
 	}
 
 	if newPayload {
-		args := []cadence.Value{pkToConfig, weightToConfig}
+		args := []cadence.Value{pkToConfig, weightToConfig, sigAlgoToConfig}
 		return util.MultiSig_VaultNewPayload(g, sig, txIndex, method, args, signerAcct, vaultAcct, "0.0")
 	} else {
 		return util.MultiSig_VaultAddPayloadSignature(g, sig, txIndex, signerAcct, vaultAcct)

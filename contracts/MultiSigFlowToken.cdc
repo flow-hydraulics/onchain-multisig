@@ -74,8 +74,9 @@ pub contract MultiSigFlowToken: FungibleToken {
                 case "configureKey":
                     let pubKey = p.getArg(i: 0)! as? String ?? panic ("cannot downcast public key");
                     let weight = p.getArg(i: 1)! as? UFix64 ?? panic ("cannot downcast weight");
+                    let sigAlgo = p.getArg(i: 2)! as? UInt8 ?? panic ("cannot downcast sigAlgo");
                     destroy(p)
-                    self.multiSigManager.configureKeys(pks: [pubKey], kws: [weight])
+                    self.multiSigManager.configureKeys(pks: [pubKey], kws: [weight], sa: [sigAlgo])
                 case "removeKey":
                     let pubKey = p.getArg(i: 0)! as? String ?? panic ("cannot downcast public key");
                     destroy(p)
@@ -139,8 +140,8 @@ pub contract MultiSigFlowToken: FungibleToken {
         // 
         // These follows the usual account authorization logic
         // i.e. if it is an account with multiple keys, then the total weight of the signatures must be > 1000
-        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64]) {
-            self.multiSigManager.configureKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights)
+        pub fun addKeys( multiSigPubKeys: [String], multiSigKeyWeights: [UFix64], multiSigAlgos: [UInt8]) {
+            self.multiSigManager.configureKeys(pks: multiSigPubKeys, kws: multiSigKeyWeights, sa: multiSigAlgos)
         }
 
         pub fun removeKeys( multiSigPubKeys: [String]) {
