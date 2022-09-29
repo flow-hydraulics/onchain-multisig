@@ -2,6 +2,8 @@
 
 # OnChainMultiSig
 
+**NOTE: This repository is currently not maintained.**
+
 This repository is the source code for the `OnChainMultiSig` contract.
 
 The `OnChainMultiSig` contract is designed to address the need for
